@@ -1,0 +1,227 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>StudyBridge - Authentication</title>
+<!-- Fonts: Plus Jakarta Sans from Design System -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols for Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-tint": "#af2f1e",
+            "primary": "#1a2b48", // StudyBridge Primary Deep Navy
+            "secondary": "#e0f2f1",
+            "accent": "#26a69a", // Soft Teal
+            "on-surface": "#191c1d",
+            "surface": "#ffffff",
+            "outline": "#cbd5e1",
+            "text-muted": "#64748b",
+            "background": "#f8fafc"
+          },
+          borderRadius: {
+            'DEFAULT': '0.25rem',
+            'lg': '0.5rem',
+            'xl': '0.75rem',
+            'full': '9999px'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Sliding Logic Improvements - 60/40 Split */
+    .container-slider.right-panel-active .sign-in-container {
+      transform: translateX(66.67%); /* (40/60)*100 to push the 60% panel to the right */
+    }
+
+    .container-slider.right-panel-active .sign-up-container {
+      transform: translateX(66.67%);
+      opacity: 1;
+      z-index: 5;
+    }
+
+    .container-slider.right-panel-active .overlay-container {
+      transform: translateX(-150%); /* (60/40)*100 to pull the 40% panel to the left */
+    }
+
+    .container-slider.right-panel-active .overlay {
+      transform: translateX(60%);
+    }
+
+    /* Core styles */
+    .form-container {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      transition: all 0.6s ease-in-out;
+    }
+
+    .sign-in-container {
+      left: 0;
+      width: 60%;
+      z-index: 2;
+    }
+
+    .sign-up-container {
+      left: 0;
+      width: 60%;
+      opacity: 0;
+      z-index: 1;
+    }
+
+    .overlay-container {
+      position: absolute;
+      top: 0;
+      left: 60%;
+      width: 40%;
+      height: 100%;
+      overflow: hidden;
+      transition: transform 0.6s ease-in-out;
+      z-index: 100;
+    }
+
+    .overlay {
+      background: #1a2b48;
+      background: linear-gradient(to right, #1a2b48, #283852);
+      color: #FFFFFF;
+      position: relative;
+      left: -150%; /* Corresponding to overlay-container width (100% / 0.40) - 100% sort of, actually relative to itself */
+      height: 100%;
+      width: 250%; /* 1 / 0.40 = 2.5 */
+      transform: translateX(0);
+      transition: transform 0.6s ease-in-out;
+    }
+
+    .overlay-panel {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 0 40px;
+      text-align: center;
+      top: 0;
+      height: 100%;
+      width: 40%; /* Each panel is 40% of the 250% wide overlay, making it 100% of the viewport width? No, 40% of total overlay = 1 viewport width. */
+      transition: transform 0.6s ease-in-out;
+    }
+
+    .overlay-left {
+      transform: translateX(-20%);
+    }
+
+    .container-slider.right-panel-active .overlay-left {
+      transform: translateX(0);
+    }
+
+    .overlay-right {
+      right: 0;
+      transform: translateX(0);
+    }
+
+    .container-slider.right-panel-active .overlay-right {
+      transform: translateX(20%);
+    }
+
+    .auth-input {
+      @apply w-full rounded-lg border border-outline bg-surface px-4 py-3 text-sm focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all outline-none;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="font-sans h-screen w-screen bg-background flex items-center justify-center">
+<!-- Fixed Logo: Positioned high-index to stay above transitions, accent color works on both -->
+<div class="fixed top-8 left-10 z-[200] pointer-events-none">
+<a class="text-xl font-extrabold text-accent tracking-tight pointer-events-auto" href="#">StudyBridge</a>
+</div>
+<main class="container-slider relative w-screen h-screen bg-white overflow-hidden shadow-2xl right-panel-active" id="auth-container">
+<!-- Sign Up Form Side -->
+<div class="form-container sign-up-container" data-purpose="sign-up-form">
+<form action="#" class="flex flex-col items-center justify-center px-10 md:px-24 h-full text-center bg-white">
+<h1 class="text-4xl font-extrabold text-primary mb-6">Create Account</h1>
+<div class="flex space-x-3 mb-6">
+
+</div>
+<p class="text-text-muted text-sm mb-6">or use your email for registration</p>
+<div class="w-full max-w-xs space-y-3 mb-6">
+<input class="auth-input" placeholder="First Name" type="text">
+<input class="auth-input" placeholder="Last Name" type="text">
+<input class="auth-input" placeholder="Email Address" type="email">
+<input class="auth-input" placeholder="Password" type="password">
+</div>
+<button class="w-full max-w-[200px] bg-primary text-white font-bold py-2 rounded-full hover:opacity-90 active:scale-95 transition-all uppercase tracking-widest text-xs shadow-lg" type="submit">SIGN UP</button>
+</form>
+</div>
+<!-- Sign In Form Side -->
+<div class="form-container sign-in-container" data-purpose="sign-in-form">
+<form action="#" class="flex flex-col items-center justify-center px-10 md:px-24 h-full text-center bg-white">
+<h1 class="text-4xl font-extrabold text-primary mb-6">Welcome Back</h1>
+<div class="flex space-x-3 mb-6">
+
+</div>
+<p class="text-text-muted text-sm mb-6">Access your student dashboard</p>
+<div class="w-full max-w-xs space-y-3 mb-4">
+<input class="auth-input" placeholder="Email Address" type="email">
+<input class="auth-input" placeholder="Password" type="password">
+</div>
+<a class="text-accent text-sm font-semibold hover:underline mb-8" href="#">Forgot password?</a>
+<button class="w-full max-w-[200px] bg-primary text-white font-bold py-2 rounded-full hover:opacity-90 active:scale-95 transition-all uppercase tracking-widest text-xs shadow-lg" type="submit">SIGN IN</button>
+</form>
+</div>
+<!-- Overlay Panel -->
+<div class="overlay-container" data-purpose="sliding-overlay">
+<div class="overlay">
+<!-- Left Overlay (Visible when Sign Up is active) -->
+<div class="overlay-panel overlay-left">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-accent text-[10px] font-extrabold tracking-widest uppercase mb-6 border border-white/20">
+<span class="material-symbols-outlined text-xs">school</span> ALREADY A MEMBER?
+        </div>
+<h2 class="text-3xl font-bold mb-6">Welcome Back!</h2>
+<p class="text-sm text-white/70 leading-relaxed mb-10 max-w-[280px]">To keep connected with your mentors please login with your personal info</p>
+<button class="bg-accent text-primary font-bold text-sm px-10 py-2 rounded-full hover:opacity-90 active:scale-95 transition-all shadow-xl" id="signIn">Sign In</button>
+</div>
+<!-- Right Overlay (Visible when Sign In is active) -->
+<div class="overlay-panel overlay-right">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-accent text-[10px] font-extrabold tracking-widest uppercase mb-6 border border-white/20">
+<span class="material-symbols-outlined text-xs">star</span> NEW TO STUDYBRIDGE?
+        </div>
+<h2 class="text-3xl font-bold mb-6">Hello, Friend!</h2>
+<p class="text-sm text-white/70 leading-relaxed mb-10 max-w-[280px]">Enter your details and start your personalized academic journey with us</p>
+<button class="bg-accent text-primary font-bold text-sm px-10 py-2 rounded-full hover:opacity-90 active:scale-95 transition-all shadow-xl" id="signUp">Create Account</button>
+</div>
+</div>
+</div>
+</main>
+<script>
+  const signUpButton = document.getElementById('signUp');
+  const signInButton = document.getElementById('signIn');
+  const container = document.getElementById('auth-container');
+
+  signUpButton.addEventListener('click', () => {
+    container.classList.add("right-panel-active");
+  });
+
+  signInButton.addEventListener('click', () => {
+    container.classList.remove("right-panel-active");
+  });
+</script>
+
+
+
+
+</body></html>
