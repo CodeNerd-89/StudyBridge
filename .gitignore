@@ -1,0 +1,8 @@
+node_modules
+todo
+.env
+frontend/dist/
+.freebuff/
+.DS_Store
+*.log
+.vscode/
