@@ -1,7 +1,31 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import { LoginPage, ProfilePage } from './features/auth';
+
+// Scrolls to the top whenever the route changes (React Router preserves scroll by default)
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
+// Route guard: redirects to login when there's no auth token
+const RequireAuth = ({ children }) => {
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
+  const location = useLocation();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+};
 
 const EmptyPage = ({ title }) => {
   return (
@@ -16,11 +40,12 @@ const EmptyPage = ({ title }) => {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route index element={<Home />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="universities" element={<EmptyPage title="Universities" />} />
           <Route path="scholarships" element={<EmptyPage title="Scholarships" />} />
           <Route path="quiz" element={<EmptyPage title="Quiz" />} />
