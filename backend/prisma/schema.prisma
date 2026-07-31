@@ -5,47 +5,24 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-enum UserRole {
-  STUDENT
-  COUNSELOR
-  ADMIN
-}
 
-model User {
-  id         String          @id @default(cuid())
-  email      String          @unique
-  password   String
-  name       String?
-  role       UserRole        @default(STUDENT)
-  ieltsScore Int?
-  greScore   Int?
-  createdAt  DateTime        @default(now())
-  savedUnis  UserSavedUni[]
-}
-
-model University {
-  id         String          @id @default(cuid())
-  name       String
-  country    String
-  qsRanking  Int?
-  ownRanking Int?
-  tuitionFee Int?
-  ieltsReq   Float?
-  greReq     Int?
-  savedBy    UserSavedUni[]
-}
-
-model UserSavedUni {
-  id            String      @id @default(cuid())
-  userId        String
-  universityId  String
-  savedAt       DateTime    @default(now())
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  university    University  @relation(fields: [universityId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, universityId])
-  @@index([userId])
-  @@index([universityId])
+model Student {
+  id               String          @id @default(cuid())
+  name             String          @db.VarChar(100)
+  email            String          @unique @db.VarChar(255)
+  password         String          @db.VarChar(255)
+  phone            String?         @db.VarChar(20)
+  country          String          @db.VarChar(100)
+  institution      String?         @db.VarChar(150)
+  subject          String?         @db.VarChar(100)
+  cgpa             Float?
+  preferredSubject String?         @db.VarChar(100)
+  satScore         Int?
+  ieltsScore       Float?
+  greScore         Int?
+  profileImage     String?         @db.VarChar(255)
+  createdAt        DateTime        @default(now())
 }

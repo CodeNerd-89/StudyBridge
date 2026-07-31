@@ -1,0 +1,302 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>StudyBridge | Authentication Portal</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&amp;display=swap" rel="stylesheet">
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#dce9ff",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1a2b48",
+                    "surface-dim": "#cbdbf5",
+                    "outline": "#75777e",
+                    "primary-fixed-dim": "#b6c7eb",
+                    "on-tertiary-container": "#20a397",
+                    "surface-container-highest": "#d3e4fe",
+                    "inverse-on-surface": "#eaf1ff",
+                    "overlay-gradient-end": "#283852",
+                    "on-background": "#0b1c30",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#e5eeff",
+                    "primary": "#031632",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#4e5f7e",
+                    "on-secondary-fixed": "#191c1e",
+                    "on-tertiary-fixed": "#00201d",
+                    "error": "#ba1a1a",
+                    "deep-navy": "#1a2b48",
+                    "accent-teal": "#26a69a",
+                    "secondary-container": "#e0e3e5",
+                    "inverse-primary": "#b6c7eb",
+                    "surface": "#f8f9ff",
+                    "on-surface-variant": "#44474d",
+                    "on-primary-fixed": "#081b38",
+                    "tertiary-fixed": "#84f5e8",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#d7e2ff",
+                    "on-secondary-fixed-variant": "#444749",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#001a18",
+                    "tertiary-container": "#00312d",
+                    "on-tertiary-fixed-variant": "#005049",
+                    "secondary-fixed": "#e0e3e5",
+                    "on-secondary-container": "#626567",
+                    "background": "#f8f9ff",
+                    "surface-variant": "#d3e4fe",
+                    "soft-slate": "#64748b",
+                    "on-surface": "#0b1c30",
+                    "on-primary-fixed-variant": "#374765",
+                    "secondary-fixed-dim": "#c4c7c9",
+                    "outline-variant": "#c5c6ce",
+                    "error-container": "#ffdad6",
+                    "secondary": "#5c5f61",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "tertiary-fixed-dim": "#66d9cc",
+                    "border-gray": "#cbd5e1",
+                    "inverse-surface": "#213145",
+                    "on-primary-container": "#8293b5"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "2rem",
+                    "container-split": "60%",
+                    "input-gap": "0.75rem",
+                    "form-padding-x": "6rem",
+                    "form-padding-y": "2.5rem"
+            },
+            "fontFamily": {
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "button-text": ["Plus Jakarta Sans"],
+                    "label-sm-caps": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "display-xl": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["30px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "button-text": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "label-sm-caps": ["10px", {"lineHeight": "1.2", "letterSpacing": "0.15em", "fontWeight": "800"}],
+                    "headline-md": ["20px", {"lineHeight": "1.4", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+                    "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-xl": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Smooth state transitions */
+        .auth-container { transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1); }
+        
+        /* Mobile specific vertical sliding logic */
+        .is-sign-up #info-panel-inner { transform: translateY(-50%); }
+        .is-sign-up #form-panel-inner { transform: translateY(-50%); }
+
+        /* Micro-interactions */
+        .btn-active:active { transform: scale(0.96); }
+        .input-focus-ring:focus { outline: none; border-color: #26a69a; box-shadow: 0 0 0 4px rgba(38, 166, 154, 0.15); }
+
+        .form-content-area { height: 100%; width: 100%; flex-shrink: 0; }
+        
+        /* Ripple effect CSS */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            pointer-events: none;
+        }
+        .ripple-effect {
+            animation: ripple 0.6s linear;
+        }
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+<style>
+        body {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<div class="relative h-screen w-full flex flex-col overflow-hidden is-sign-up" id="auth-root">
+<!-- TOP BRANDING / OVERLAY PANEL SECTION (40% height) -->
+<div class="relative h-[40%] bg-primary overflow-hidden z-20 shadow-xl" id="info-panel">
+<!-- Background Decoration -->
+<div class="absolute inset-0 opacity-20 pointer-events-none">
+<div class="absolute -top-24 -left-24 w-64 h-64 bg-accent-teal rounded-full blur-[100px]"></div>
+<div class="absolute -bottom-24 -right-24 w-80 h-80 bg-primary-container rounded-full blur-[120px]"></div>
+</div>
+<!-- Sticky Logo - Stays fixed relative to this panel -->
+<div class="absolute top-6 left-6 z-30">
+<div class="flex items-center gap-2">
+
+<span class="font-display-lg text-display-lg text-white">StudyBridge</span>
+</div>
+</div>
+<!-- Vertical Sliding Content for Info Panel -->
+<div class="auth-container h-[200%] w-full" id="info-panel-inner">
+<!-- View 1: Prompt for Sign Up -->
+<div class="h-1/2 flex flex-col items-center justify-center px-8 text-center pt-12">
+<h2 class="font-display-xl text-display-xl text-white mb-2">Hello, Friend!</h2>
+<p class="font-body-md text-body-md text-primary-fixed-dim mb-6 max-w-[280px]">Enter your personal details and start your academic journey with us today.</p>
+<button class="px-10 py-3 border-2 border-white text-white rounded-full font-button-text text-button-text uppercase tracking-widest hover:bg-white hover:text-primary transition-all duration-300 btn-active relative overflow-hidden" onclick="toggleAuthMode()">
+                        Sign Up
+                    </button>
+</div>
+<!-- View 2: Prompt for Sign In -->
+<div class="h-1/2 flex flex-col items-center justify-center px-8 text-center pt-12">
+<h2 class="font-display-xl text-display-xl text-white mb-2">Welcome Back!</h2>
+<p class="font-body-md text-body-md text-primary-fixed-dim mb-6 max-w-[280px]">To keep connected with your mentors, please login with your personal info.</p>
+<button class="px-10 py-3 border-2 border-accent-teal text-accent-teal rounded-full font-button-text text-button-text uppercase tracking-widest hover:bg-accent-teal hover:text-white transition-all duration-300 btn-active relative overflow-hidden" onclick="toggleAuthMode()">
+                        Sign In
+                    </button>
+</div>
+</div>
+</div>
+<!-- BOTTOM FORM SECTION (60% height) -->
+<div class="relative h-[60%] bg-surface z-10 overflow-hidden" id="form-panel">
+<!-- Vertical Sliding Content for Form Panel -->
+<div class="auth-container h-[200%] w-full" id="form-panel-inner">
+<!-- View 1: LOGIN FORM -->
+<div class="h-1/2 flex flex-col px-8 py-8 overflow-y-auto">
+<div class="mb-6">
+<h1 class="font-display-lg text-display-lg text-primary">Sign In</h1>
+<div class="flex gap-4 mt-4">
+<button class="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary">mail</span>
+</button>
+
+</div>
+<p class="font-label-sm-caps text-label-sm-caps text-on-surface-variant mt-6 text-center">or use your account</p>
+</div>
+<form class="flex flex-col gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md input-focus-ring" placeholder="Email" type="email">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md input-focus-ring" placeholder="Password" type="password">
+</div>
+<a class="text-right text-accent-teal font-body-md text-body-md hover:underline" href="#">Forgot your password?</a>
+<button class="mt-2 w-full py-4 bg-primary text-white rounded-full font-button-text text-button-text uppercase tracking-widest btn-active shadow-lg relative overflow-hidden" type="button">
+                            Sign In
+                        </button>
+</form>
+</div>
+<!-- View 2: REGISTER FORM -->
+<div class="h-1/2 flex flex-col px-8 py-8 overflow-y-auto">
+<div class="mb-6">
+<h1 class="font-display-lg text-display-lg text-primary">Create Account</h1>
+<div class="flex gap-4 mt-4">
+<button class="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary">mail</span>
+</button>
+</div>
+<p class="font-label-sm-caps text-label-sm-caps text-on-surface-variant mt-6 text-center">or use your email for registration</p>
+</div>
+<form class="flex flex-col gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">person</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md input-focus-ring" placeholder="Full Name" type="text">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md input-focus-ring" placeholder="Email" type="email">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md input-focus-ring" placeholder="Password" type="password">
+</div>
+<button class="mt-2 w-full py-4 bg-primary text-white rounded-full font-button-text text-button-text uppercase tracking-widest btn-active shadow-lg relative overflow-hidden" type="button">
+                            Sign Up
+                        </button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Atmospheric Effect -->
+<div class="fixed inset-0 pointer-events-none z-0 opacity-50">
+<div class="w-full h-full bg-cover bg-center mix-blend-overlay opacity-30" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuAZR7b_9_ythoZ1lxUvzCDIIFC8sf-zLA2rMYe9WJRCv6U3ULXDvgk7v1hpQCfTC5VxETeBSz-qvtgudGDTC2dFl-5wHtU61xVO7JPvf6Q7aGB5IR27O1ztlbsSw3eZ7gVnTW1FPAgh97SwgN-jq-pksI9ucTTAZ-Z1tPEbu8kcfp54Pqgf2FXbgi3-SSZIu4oj2kYQ6YtxK4kK3PDBvOFA0Od4UuB0oCW5WBLy8QaYEKO2NaUJ8plH&quot;);"></div>
+</div>
+<script>
+        let isSignUp = false;
+        const root = document.getElementById('auth-root');
+
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            if (isSignUp) {
+                root.classList.add('is-sign-up');
+            } else {
+                root.classList.remove('is-sign-up');
+            }
+
+            // Haptic feedback simulation for mobile
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(10);
+            }
+        }
+
+        // Handle micro-interaction on button clicks
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                let ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                this.appendChild(ripple);
+                let d = Math.max(this.clientWidth, this.clientHeight);
+                ripple.style.width = ripple.style.height = d + 'px';
+                
+                // Adjustment for button padding/bounding box
+                const rect = this.getBoundingClientRect();
+                let x = e.clientX - rect.left - d / 2;
+                let y = e.clientY - rect.top - d / 2;
+                
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple-effect');
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+
+
+</body></html>

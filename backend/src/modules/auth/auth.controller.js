@@ -11,8 +11,6 @@ export const login = async (req, res) => {
 };
 
 export const me = async (req, res) => {
-  return res.status(200).json({
-    success: true,
-    user: req.user,
-  });
+  const result = await authService.me(req.user.id);
+  return res.status(result.status).json(result.body);
 };

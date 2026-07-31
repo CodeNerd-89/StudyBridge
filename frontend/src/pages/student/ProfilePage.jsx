@@ -1,12 +1,95 @@
+import { useEffect, useRef, useState } from 'react';
+import api from '../../services/api';
+
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face';
+
+const DEMO_USER = {
+  name: 'Alex Chen',
+  tagline: 'Studying Computer Science at Stanford University Aspirant. Focusing on the 2024 Early Action cycle.',
+  gpa: '3.94',
+  sat: '1540',
+  readiness: '78%',
+};
+
+// Cached profile saved at login/registration, so the page isn't blank while /me loads
+const getCachedUser = () => {
+  try {
+    const cached = localStorage.getItem('userProfile');
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
 const ProfilePage = () => {
-  const user = {
-    name: 'Alex Chen',
-    tagline: 'Studying Computer Science at Stanford University Aspirant. Focusing on the 2024 Early Action cycle.',
-    gpa: '3.94',
-    sat: '1540',
-    readiness: '78%',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face',
+  const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
+  const [user, setUser] = useState(getCachedUser());
+  const fileInputRef = useRef(null);
+
+  // Load the logged-in student's real data (name, GPA, SAT, …) from the backend
+  useEffect(() => {
+    let cancelled = false;
+    const loadProfile = async () => {
+      try {
+        const { data } = await api.get('/auth/me');
+        if (!cancelled && data.user) setUser(data.user);
+      } catch {
+        // Keep the cached (or demo) profile — nothing to show the user about this
+      }
+    };
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Downscale to a small JPEG (aspect preserved) so the dataURL stays well under localStorage's quota
+        const MAX = 400;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setAvatar(dataUrl);
+        localStorage.setItem('userAvatar', dataUrl);
+        window.dispatchEvent(new Event('profileupdate'));
+      };
+      img.onerror = () => {
+        e.target.value = '';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // allow re-selecting the same file later
   };
+
+  // Real data wins; cached/demo values only fill gaps. '—' when the logged-in user left a field blank
+  const name = user?.name || DEMO_USER.name;
+  const taglineParts = user
+    ? [
+        user.preferredSubject && `${user.preferredSubject} aspirant`,
+        user.country && `from ${user.country}`,
+        user.institution && `at ${user.institution}`,
+      ].filter(Boolean)
+    : [];
+  const tagline = taglineParts.length
+    ? `${taglineParts.join(' ')} — exploring top universities worldwide.`
+    : DEMO_USER.tagline;
+  const gpa = user ? (user.cgpa != null ? String(user.cgpa) : '—') : DEMO_USER.gpa;
+  const sat = user ? (user.satScore != null ? String(user.satScore) : '—') : DEMO_USER.sat;
+  const readiness = DEMO_USER.readiness;
 
   return (
     <div className="animate-fade-in">
@@ -15,31 +98,40 @@ const ProfilePage = () => {
         <div className="relative mb-8 inline-block">
           <img
             className="h-40 w-40 rounded-full border-4 border-white object-cover shadow-xl"
-            src={user.avatar}
-            alt={`${user.name} portrait`}
+            src={avatar}
+            alt={`${name} portrait`}
           />
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full border border-surface-variant bg-white text-on-surface shadow-lg transition-transform hover:scale-105"
+            aria-label="Upload profile photo"
           >
             <span className="material-symbols-outlined text-[20px] text-deep-navy">
               photo_camera
             </span>
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
         </div>
 
         <h1 className="mb-4 font-['Plus_Jakarta_Sans'] text-[40px] font-bold leading-tight tracking-tight text-deep-navy">
-          {user.name}
+          {name}
         </h1>
 
         <p className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-on-surface-variant">
-          {user.tagline}
+          {tagline}
         </p>
 
         <div className="flex justify-center gap-16 border-y border-outline-variant/50 py-10">
           <div className="text-center">
             <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-deep-navy">
-              {user.gpa}
+              {gpa}
             </span>
             <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
               GPA
@@ -47,7 +139,7 @@ const ProfilePage = () => {
           </div>
           <div className="text-center">
             <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-deep-navy">
-              {user.sat}
+              {sat}
             </span>
             <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
               SAT
@@ -55,7 +147,7 @@ const ProfilePage = () => {
           </div>
           <div className="text-center">
             <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-accent">
-              {user.readiness}
+              {readiness}
             </span>
             <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
               Readiness
