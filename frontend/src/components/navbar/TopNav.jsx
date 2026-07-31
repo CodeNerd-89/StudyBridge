@@ -10,6 +10,7 @@ import ScrollPlaneProgress from '../common/ScrollPlaneProgress';
 const items = [
   { to: '/', label: 'Home' },
   { to: '/universities', label: 'University' },
+  { to: '/profile', label: 'Profile' },
   { to: '/scholarships', label: 'Scholarship' },
   { to: '/quiz', label: 'Quiz' },
 ];
@@ -101,7 +102,7 @@ const TopNav = () => {
             <Button
               to="/login"
               variant="primary"
-              className="hidden rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 lg:inline-flex"
+              className="inline-flex rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 sm:px-6"
             >
               Get Started
             </Button>

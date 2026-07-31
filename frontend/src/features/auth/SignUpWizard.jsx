@@ -36,7 +36,7 @@ const Field = ({ label, id, icon, ...props }) => (
   </div>
 );
 
-const SignUpWizard = ({ onComplete }) => {
+const SignUpWizard = ({ onComplete, submitting = false }) => {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -283,16 +283,18 @@ const SignUpWizard = ({ onComplete }) => {
             <button
               type="button"
               onClick={back}
-              className="flex-1 py-3 rounded-full border-2 border-[#cbd5e1] text-primary font-bold text-[11px] uppercase tracking-widest hover:bg-[#f1f5f9] active:scale-95 transition-all"
+              disabled={submitting}
+              className="flex-1 py-3 rounded-full border-2 border-[#cbd5e1] text-primary font-bold text-[11px] uppercase tracking-widest hover:bg-[#f1f5f9] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Back
             </button>
           )}
           <button
             type="submit"
-            className={`${step > 0 ? 'flex-[2]' : 'flex-1'} py-3 bg-primary text-white rounded-full font-bold text-[11px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg`}
+            disabled={submitting}
+            className={`${step > 0 ? 'flex-[2]' : 'flex-1'} py-3 bg-primary text-white rounded-full font-bold text-[11px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
           >
-            {step === 4 ? 'Create Account' : 'Continue'}
+            {submitting ? 'Creating…' : step === 4 ? 'Create Account' : 'Continue'}
           </button>
         </div>
       </div>
