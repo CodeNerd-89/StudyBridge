@@ -1,11 +1,49 @@
+import { useRef, useState } from 'react';
+
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face';
+
 const ProfilePage = () => {
+  const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
+  const fileInputRef = useRef(null);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Downscale to a small JPEG (aspect preserved) so the dataURL stays well under localStorage's quota
+        const MAX = 400;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setAvatar(dataUrl);
+        localStorage.setItem('userAvatar', dataUrl);
+        window.dispatchEvent(new Event('profileupdate'));
+      };
+      img.onerror = () => {
+        e.target.value = '';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // allow re-selecting the same file later
+  };
+
   const user = {
     name: 'Alex Chen',
     tagline: 'Studying Computer Science at Stanford University Aspirant. Focusing on the 2024 Early Action cycle.',
     gpa: '3.94',
     sat: '1540',
     readiness: '78%',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face',
   };
 
   return (
@@ -15,17 +53,26 @@ const ProfilePage = () => {
         <div className="relative mb-8 inline-block">
           <img
             className="h-40 w-40 rounded-full border-4 border-white object-cover shadow-xl"
-            src={user.avatar}
+            src={avatar}
             alt={`${user.name} portrait`}
           />
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full border border-surface-variant bg-white text-on-surface shadow-lg transition-transform hover:scale-105"
+            aria-label="Upload profile photo"
           >
             <span className="material-symbols-outlined text-[20px] text-deep-navy">
               photo_camera
             </span>
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
         </div>
 
         <h1 className="mb-4 font-['Plus_Jakarta_Sans'] text-[40px] font-bold leading-tight tracking-tight text-deep-navy">

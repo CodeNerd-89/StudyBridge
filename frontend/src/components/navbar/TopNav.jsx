@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { CircleUserRound, LogOut, Menu, X } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face';
 import Button from '../ui/Button';
 import ScrollPlaneProgress from '../common/ScrollPlaneProgress';
 
@@ -13,27 +16,36 @@ const items = [
 
 const TopNav = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('token')));
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userProfile');
     window.dispatchEvent(new Event('authchange'));
-    navigate('/login');
+    navigate('/');
   };
 
   useEffect(() => {
     const syncAuth = () => setIsLoggedIn(Boolean(localStorage.getItem('token')));
+    const syncAvatar = () => setAvatar(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
+    const handleStorage = () => {
+      syncAuth();
+      syncAvatar();
+    };
 
-    window.addEventListener('storage', syncAuth);
+    window.addEventListener('storage', handleStorage);
     window.addEventListener('authchange', syncAuth);
+    window.addEventListener('profileupdate', syncAvatar);
     syncAuth();
+    syncAvatar();
 
     return () => {
-      window.removeEventListener('storage', syncAuth);
+      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('authchange', syncAuth);
+      window.removeEventListener('profileupdate', syncAvatar);
     };
   }, []);
 
@@ -107,71 +119,15 @@ const TopNav = () => {
               ) : (
                 <Link
                   to="/profile"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline bg-white text-primary shadow-sm transition hover:border-primary"
+                  className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-outline bg-white shadow-sm transition hover:border-primary"
                   aria-label="Open profile"
                 >
-                  <CircleUserRound className="h-6 w-6" />
+                  <img src={avatar} alt="" className="h-full w-full object-cover" />
                 </Link>
               )}
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen((current) => !current)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline bg-white text-primary shadow-sm transition hover:border-primary md:hidden"
-            aria-expanded={menuOpen}
-            aria-label="Open menu"
-          >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      <div className={`md:hidden ${menuOpen ? 'block' : 'hidden'}`}>
-        <div className="absolute left-4 right-4 top-full mt-2 rounded-2xl border border-outline bg-white p-4 shadow-lg">
-          <div className="flex flex-col gap-2">
-            {items.map((item) => {
-              const active = isActive(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMenuOpen(false)}
-                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                    active
-                      ? 'bg-primary text-white'
-                      : 'text-primary hover:bg-secondary'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            {!isLoggedIn ? (
-              <div className="mt-2 border-t border-outline pt-2">
-                <Button
-                  to="/login"
-                  variant="primary"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full justify-center rounded-full bg-primary px-5 py-2.5 shadow-sm hover:bg-opacity-90"
-                >
-                  Get Started
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-2 border-t border-outline pt-2">
-                <button
-                  type="button"
-                  onClick={() => { handleLogout(); setMenuOpen(false); }}
-                  className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
