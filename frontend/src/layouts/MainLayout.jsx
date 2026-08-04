@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import TopNav from '../components/navbar/TopNav';
 import MobileBottomNav from '../components/navbar/MobileBottomNav';
 import Footer from '../components/common/Footer';
+import FloatingChat from '../features/ai/FloatingChat';
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
@@ -18,6 +19,7 @@ const MainLayout = ({ children }) => {
         <main className="mx-auto w-full max-w-[1200px] px-8 py-8">{children ?? <Outlet />}</main>
       )}
       <Footer />
+      <FloatingChat />
     </div>
   );
 };

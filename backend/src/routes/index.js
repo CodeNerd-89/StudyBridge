@@ -5,6 +5,7 @@ import universitiesRoutes from '../modules/universities/universities.routes.js';
 import scholarshipsRoutes from '../modules/scholarships/scholarships.routes.js';
 import testsRoutes from '../modules/tests/tests.routes.js';
 import aiRoutes from '../modules/ai/ai.routes.js';
+import chatbotRoutes from '../modules/chatbot/chatbot.routes.js';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/universities', universitiesRoutes);
 router.use('/scholarships', scholarshipsRoutes);
 router.use('/quiz', testsRoutes);
 router.use('/chatbot', aiRoutes);
+router.use('/chat', chatbotRoutes);
 
 export default router;

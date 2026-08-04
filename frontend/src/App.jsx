@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import UniversityPage from './pages/universities/UniversityPage';
 import ScholarshipPage from './pages/scholarships/ScholarshipPage';
 import { LoginPage, ProfilePage } from './features/auth';
+import { ChatbotPage } from './features/ai';
 
 // Scrolls to the top whenever the route changes (React Router preserves scroll by default)
 const ScrollToTop = () => {
@@ -51,6 +52,7 @@ function App() {
           <Route path="universities" element={<UniversityPage />} />
           <Route path="scholarships" element={<ScholarshipPage />} />
           <Route path="quiz" element={<EmptyPage title="Quiz" />} />
+          <Route path="chatbot" element={<RequireAuth><ChatbotPage /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
