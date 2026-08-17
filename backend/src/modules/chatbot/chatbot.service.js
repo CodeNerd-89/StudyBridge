@@ -33,31 +33,93 @@ const buildStudentContext = (student) => {
   return lines.join('\n');
 };
 
-const buildSystemPrompt = (studentContext) => `
+// ---------------------------------------------------------------------------
+// Build university & scholarship context from database
+// ---------------------------------------------------------------------------
+
+const buildUniversityContext = (universities) => {
+  if (!universities || universities.length === 0) {
+    return 'No university data available in the database.';
+  }
+
+  return universities.map((u) => {
+    const courses = Array.isArray(u.courses) ? u.courses.join(', ') : 'N/A';
+    const lines = [
+      `📌 ${u.name} (Rank #${u.ranking})`,
+      `   Location: ${u.city || 'N/A'}, ${u.country}`,
+      `   Tuition: $${u.tuitionAnnualUsd?.toLocaleString() || 'N/A'}/year`,
+      `   Acceptance Rate: ${u.acceptanceRate != null ? u.acceptanceRate + '%' : 'N/A'}`,
+      `   Application Fee: $${u.applicationFee || 'N/A'}`,
+      `   Application Deadline: ${u.applicationDeadline || 'N/A'}`,
+      `   IELTS Requirement: ${u.ieltsRequirement != null ? u.ieltsRequirement : 'Not specified'}`,
+      `   GRE Requirement: ${u.greRequirement != null ? u.greRequirement : 'Not required'}`,
+      `   Courses: ${courses}`,
+      `   Website: ${u.websiteUrl || 'N/A'}`,
+    ];
+    return lines.join('\n');
+  }).join('\n\n');
+};
+
+const buildScholarshipContext = (scholarships) => {
+  if (!scholarships || scholarships.length === 0) {
+    return 'No scholarship data available in the database.';
+  }
+
+  return scholarships.map((s) => {
+    const lines = [
+      `💰 ${s.name}`,
+      `   Country: ${s.country}`,
+      `   Amount: $${s.amountUsd?.toLocaleString() || 'N/A'}/year`,
+      `   Funding Level: ${s.fundingLevel}`,
+      `   Eligibility: ${s.eligibility || 'N/A'}`,
+      `   Deadline: ${s.deadline || 'N/A'}`,
+      `   Website: ${s.websiteUrl || 'N/A'}`,
+    ];
+    return lines.join('\n');
+  }).join('\n\n');
+};
+
+const buildSystemPrompt = (studentContext, universityContext, scholarshipContext) => `
 You are StudyBridge AI Admission Advisor — a knowledgeable and supportive counselor
 that helps students navigate university admissions for study-abroad programs.
 
 STUDENT PROFILE (from our database):
 ${studentContext}
 
+=== UNIVERSITY DATABASE (${universityContext.split('📌').length - 1} universities) ===
+${universityContext}
+
+=== SCHOLARSHIP DATABASE ===
+${scholarshipContext}
+
 YOUR GUIDELINES:
-1. Provide personalised advice based ONLY on the student profile shown above.
+1. Provide personalised advice based on the student profile AND the university/scholarship
+   data shown above. This data comes from our live database.
 2. When comparing scores to university requirements, clearly reference the
-   student's actual numbers from their profile.
+   student's actual numbers from their profile against the specific
+   requirements from the database.
 3. If the student's profile is missing data needed to answer a question
    (e.g., no GRE score recorded), point this out and suggest they update
    their profile.
-4. Do NOT fabricate specific admission statistics, acceptance rates, or
-   cutoff scores. If you are unsure about a university's exact requirements,
-   say so and recommend the student verify on the university's official website.
-5. Be encouraging but honest. If the student's profile suggests they may not
+4. When asked about a university or scholarship that IS in the database above,
+   use the exact data provided (tuition, requirements, deadlines, etc.).
+5. When asked about a university NOT in the database, clearly state that you
+   don't have detailed data for that university in your records and recommend
+   the student check the university's official website.
+6. For scholarship questions, reference the specific scholarships listed
+   in the database. Match scholarships by country relevance to the student.
+7. Be encouraging but honest. If the student's profile suggests they may not
    meet typical requirements, provide constructive suggestions for improvement.
-6. Focus on actionable advice: what steps to take, what scores to aim for,
+8. Focus on actionable advice: what steps to take, what scores to aim for,
    which types of programs might be a good fit.
-7. Keep responses concise and well-structured. Use bullet points or numbered
+9. Keep responses concise and well-structured. Use bullet points or numbered
    lists where appropriate.
-8. Only discuss topics related to university admissions, scholarships, test
-   preparation, and academic planning. Politely redirect off-topic questions.
+10. Only discuss topics related to university admissions, scholarships, test
+    preparation, and academic planning. Politely redirect off-topic questions.
+11. When recommending universities, proactively match the student's scores
+    and preferred subject to suitable programs from the database.
+12. You can suggest universities where the student's IELTS/GRE scores meet
+    or exceed requirements, and flag universities where they fall short.
 `.trim();
 
 // ---------------------------------------------------------------------------
@@ -83,9 +145,17 @@ export const sendMessage = async (userId, message) => {
       return { status: 404, body: { success: false, message: 'Student profile not found.' } };
     }
 
+    // --- Load universities and scholarships from database ---
+    const [universities, scholarships] = await Promise.all([
+      prisma.university.findMany({ orderBy: { ranking: 'asc' } }),
+      prisma.scholarship.findMany({ orderBy: { name: 'asc' } }),
+    ]);
+
     // --- Build prompt ---
     const studentContext = buildStudentContext(student);
-    const systemPrompt = buildSystemPrompt(studentContext);
+    const universityContext = buildUniversityContext(universities);
+    const scholarshipContext = buildScholarshipContext(scholarships);
+    const systemPrompt = buildSystemPrompt(studentContext, universityContext, scholarshipContext);
 
     // --- Call Groq ---
     const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
@@ -97,7 +167,7 @@ export const sendMessage = async (userId, message) => {
         { role: 'user', content: message.trim() },
       ],
       temperature: 0.7,
-      max_tokens: 1024,
+      max_tokens: 2048,
     });
 
     const reply = completion.choices?.[0]?.message?.content?.trim();
