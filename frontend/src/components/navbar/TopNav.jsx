@@ -13,6 +13,7 @@ const items = [
   { to: '/profile', label: 'Profile' },
   { to: '/scholarships', label: 'Scholarship' },
   { to: '/quiz', label: 'Quiz' },
+  { to: '/chatbot', label: 'Chatbot' },
 ];
 
 const TopNav = () => {

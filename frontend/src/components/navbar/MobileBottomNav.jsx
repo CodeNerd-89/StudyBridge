@@ -6,6 +6,7 @@ const items = [
   { to: '/profile', label: 'Profile', icon: 'person' },
   { to: '/scholarships', label: 'Scholarship', icon: 'payments' },
   { to: '/quiz', label: 'Quiz', icon: 'edit_note' },
+  { to: '/chatbot', label: 'Chatbot', icon: 'smart_toy' },
 ];
 
 const MobileBottomNav = () => {
