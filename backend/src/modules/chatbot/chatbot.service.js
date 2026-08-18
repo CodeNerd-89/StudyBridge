@@ -4,9 +4,15 @@ import prisma from '../../config/database.js';
 // Lazy-initialized singleton
 let genAIClient;
 
+const getApiKey = () => {
+  const raw = process.env.GEMINI_API_KEY || '';
+  return raw.replace(/^['"]|['"]$/g, '').trim();
+};
+
 const getClient = () => {
   if (!genAIClient) {
-    genAIClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const key = getApiKey();
+    genAIClient = new GoogleGenerativeAI(key);
   }
   return genAIClient;
 };
@@ -120,7 +126,7 @@ export const sendMessage = async (userId, message) => {
     return { status: 400, body: { success: false, message: 'Message is required.' } };
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!getApiKey()) {
     console.error('Chatbot error: GEMINI_API_KEY is not configured.');
     return { status: 500, body: { success: false, message: 'AI service is not configured.' } };
   }
@@ -193,7 +199,11 @@ export const sendMessage = async (userId, message) => {
   } catch (err) {
     console.error('Chatbot error:', err?.status, err?.message || err);
 
-    if (err?.status === 401 || err?.code === 'invalid_api_key') {
+    if (
+      err?.status === 401 ||
+      err?.code === 'invalid_api_key' ||
+      (err?.status === 400 && (err?.message?.includes('API key') || err?.message?.includes('API_KEY')))
+    ) {
       return { status: 502, body: { success: false, message: 'AI service authentication failed. Check your Gemini API key.' } };
     }
     if (err?.status === 404) {
