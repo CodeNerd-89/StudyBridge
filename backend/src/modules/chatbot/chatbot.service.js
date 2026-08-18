@@ -1,14 +1,14 @@
-import Groq from 'groq-sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import prisma from '../../config/database.js';
 
 // Lazy-initialized singleton
-let groqClient;
+let genAIClient;
 
 const getClient = () => {
-  if (!groqClient) {
-    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!genAIClient) {
+    genAIClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
-  return groqClient;
+  return genAIClient;
 };
 
 // ---------------------------------------------------------------------------
@@ -80,46 +80,34 @@ const buildScholarshipContext = (scholarships) => {
 };
 
 const buildSystemPrompt = (studentContext, universityContext, scholarshipContext) => `
-You are StudyBridge AI Admission Advisor — a knowledgeable and supportive counselor
-that helps students navigate university admissions for study-abroad programs.
+You are StudyBridge AI Admission Advisor — an elite, knowledgeable, and empathetic global education counselor helping students navigate university admissions, scholarships, exam preparation, visa procedures, and career planning.
 
-STUDENT PROFILE (from our database):
+STUDENT PROFILE (from live database):
 ${studentContext}
 
-=== UNIVERSITY DATABASE (${universityContext.split('📌').length - 1} universities) ===
+=== PARTNER UNIVERSITIES DATABASE (${universityContext.split('📌').length - 1} institutions) ===
 ${universityContext}
 
 === SCHOLARSHIP DATABASE ===
 ${scholarshipContext}
 
-YOUR GUIDELINES:
-1. Provide personalised advice based on the student profile AND the university/scholarship
-   data shown above. This data comes from our live database.
-2. When comparing scores to university requirements, clearly reference the
-   student's actual numbers from their profile against the specific
-   requirements from the database.
-3. If the student's profile is missing data needed to answer a question
-   (e.g., no GRE score recorded), point this out and suggest they update
-   their profile.
-4. When asked about a university or scholarship that IS in the database above,
-   use the exact data provided (tuition, requirements, deadlines, etc.).
-5. When asked about a university NOT in the database, clearly state that you
-   don't have detailed data for that university in your records and recommend
-   the student check the university's official website.
-6. For scholarship questions, reference the specific scholarships listed
-   in the database. Match scholarships by country relevance to the student.
-7. Be encouraging but honest. If the student's profile suggests they may not
-   meet typical requirements, provide constructive suggestions for improvement.
-8. Focus on actionable advice: what steps to take, what scores to aim for,
-   which types of programs might be a good fit.
-9. Keep responses concise and well-structured. Use bullet points or numbered
-   lists where appropriate.
-10. Only discuss topics related to university admissions, scholarships, test
-    preparation, and academic planning. Politely redirect off-topic questions.
-11. When recommending universities, proactively match the student's scores
-    and preferred subject to suitable programs from the database.
-12. You can suggest universities where the student's IELTS/GRE scores meet
-    or exceed requirements, and flag universities where they fall short.
+YOUR COUNSELING CAPABILITIES & GUIDELINES:
+1. Personalized Matching: Proactively leverage the student's profile (name, CGPA, IELTS, SAT, GRE, preferred subject, country). Connect your advice directly to their academic standing and goals.
+2. Comprehensive Knowledge: You can answer questions on ALL topics related to international education, including:
+   - University Selection & Rankings (both partner institutions and any world university)
+   - Admission Strategies (deadlines, acceptance criteria, prerequisite courses)
+   - Application Materials (Statement of Purpose / SOP writing, Personal Statements, Letters of Recommendation / LORs, Academic CVs, Portfolios)
+   - Standardized Tests (IELTS, TOEFL, PTE, Duolingo, GRE, GMAT, SAT, ACT — prep tips, scoring bands, waiver criteria)
+   - Funding & Scholarships (our partner scholarships, university grants, assistantships TA/RA, external government awards like Fulbright, Chevening, DAAD, Erasmus Mundus, etc.)
+   - Visa & Immigration (USA F-1/OPT/CPT, UK Student Visa/Graduate Route, Canada Study Permit/PGWP, Germany/EU Blue Card, Australia, etc.)
+   - Country Comparisons (comparing USA, UK, Canada, Germany, Australia, Europe, Asia on costs, work permits, PR pathways, quality of life)
+   - Career Outcomes & ROI (job market demand, expected starting salaries, high-demand tech & business specializations)
+3. Data Grounding: When questions involve universities or scholarships listed in our partner database above, use the exact figures provided (tuition, rank, acceptance rate, requirements, deadlines). When discussing universities or subjects outside the database, provide accurate, world-class counselor guidance and mention that official university portals should be checked for the latest semester dates.
+4. Clean Formatting & Readability:
+   - Structure responses logically using clear Markdown headings (###), bold key terms (**term**), bullet points, and numbered steps.
+   - Avoid long, dense blocks of text. Make responses visually engaging and easy to skim.
+   - Highlight actionable takeaways, deadlines, or score targets clearly.
+5. Tone: Warm, encouraging, realistic, and highly professional. Offer concrete next steps and constructive advice for profile improvement whenever appropriate.
 `.trim();
 
 // ---------------------------------------------------------------------------
@@ -132,8 +120,8 @@ export const sendMessage = async (userId, message) => {
     return { status: 400, body: { success: false, message: 'Message is required.' } };
   }
 
-  if (!process.env.GROQ_API_KEY) {
-    console.error('Chatbot error: GROQ_API_KEY is not configured.');
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('Chatbot error: GEMINI_API_KEY is not configured.');
     return { status: 500, body: { success: false, message: 'AI service is not configured.' } };
   }
 
@@ -157,22 +145,47 @@ export const sendMessage = async (userId, message) => {
     const scholarshipContext = buildScholarshipContext(scholarships);
     const systemPrompt = buildSystemPrompt(studentContext, universityContext, scholarshipContext);
 
-    // --- Call Groq ---
-    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+    // --- Call Gemini with Fallback Models ---
+    const preferredModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+    const fallbackModels = [
+      preferredModel,
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-3-flash-preview',
+      'gemini-3.5-flash-lite',
+    ];
+    // Remove duplicate model names while preserving order
+    const candidateModels = [...new Set(fallbackModels)];
 
-    const completion = await getClient().chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message.trim() },
-      ],
-      temperature: 0.7,
-      max_tokens: 2048,
-    });
+    const genAI = getClient();
+    let reply = null;
+    let lastError = null;
 
-    const reply = completion.choices?.[0]?.message?.content?.trim();
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+        });
+
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: message.trim() }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          },
+        });
+
+        reply = result?.response?.text()?.trim();
+        if (reply) break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Gemini model ${modelName} failed, trying next fallback:`, err?.message || err);
+      }
+    }
 
     if (!reply) {
+      if (lastError) throw lastError;
       return { status: 502, body: { success: false, message: 'AI service returned an empty response.' } };
     }
 
@@ -181,10 +194,10 @@ export const sendMessage = async (userId, message) => {
     console.error('Chatbot error:', err?.status, err?.message || err);
 
     if (err?.status === 401 || err?.code === 'invalid_api_key') {
-      return { status: 502, body: { success: false, message: 'AI service authentication failed. Check your Groq API key.' } };
+      return { status: 502, body: { success: false, message: 'AI service authentication failed. Check your Gemini API key.' } };
     }
     if (err?.status === 404) {
-      return { status: 502, body: { success: false, message: 'AI model not found. Please check your GROQ_MODEL configuration.' } };
+      return { status: 502, body: { success: false, message: 'AI model not found. Please check your GEMINI_MODEL configuration.' } };
     }
     if (err?.status === 429) {
       return { status: 429, body: { success: false, message: 'AI service rate limit exceeded. Please try again in a moment.' } };
