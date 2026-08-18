@@ -158,7 +158,7 @@ export const sendMessage = async (userId, message) => {
     const systemPrompt = buildSystemPrompt(studentContext, universityContext, scholarshipContext);
 
     // --- Call Groq ---
-    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
     const completion = await getClient().chat.completions.create({
       model,
