@@ -158,7 +158,7 @@ export const sendMessage = async (userId, message) => {
     const systemPrompt = buildSystemPrompt(studentContext, universityContext, scholarshipContext);
 
     // --- Call Groq ---
-    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+    const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
     const completion = await getClient().chat.completions.create({
       model,
@@ -178,10 +178,13 @@ export const sendMessage = async (userId, message) => {
 
     return { status: 200, body: { success: true, reply } };
   } catch (err) {
-    console.error('Chatbot error:', err);
+    console.error('Chatbot error:', err?.status, err?.message || err);
 
     if (err?.status === 401 || err?.code === 'invalid_api_key') {
       return { status: 502, body: { success: false, message: 'AI service authentication failed. Check your Groq API key.' } };
+    }
+    if (err?.status === 404) {
+      return { status: 502, body: { success: false, message: 'AI model not found. Please check your GROQ_MODEL configuration.' } };
     }
     if (err?.status === 429) {
       return { status: 429, body: { success: false, message: 'AI service rate limit exceeded. Please try again in a moment.' } };
