@@ -1,4 +1,4 @@
-const CACHE_NAME = 'studybridge-v1';
+const CACHE_NAME = 'studybridge-v2';
 const PRECACHE_URLS = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {
@@ -19,15 +19,33 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  // Handle SPA HTML page navigation (e.g. refreshing /chatbot, /universities, /profile)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // If server returns 404 on page reload, fallback to cached index.html so React Router takes over
+          if (!response || response.status === 404) {
+            return caches.match('/index.html').then((cached) => cached || caches.match('/') || response);
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html').then((cached) => cached || caches.match('/offline.html'))),
+    );
+    return;
+  }
+
+  // Handle static assets & requests
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (response.ok && event.request.url.startsWith(self.location.origin) && !event.request.url.includes('/api/')) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/offline.html'))),
+      });
+    }),
   );
 });
