@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 
-const STEPS = ['Personal', 'Scores', 'Subject', 'Account'];
+const STEPS = ['Personal', 'Scores', 'Subject'];
 
 const SUBJECTS = [
   'Computer Science',
@@ -36,19 +36,16 @@ const Field = ({ label, id, icon, ...props }) => (
   </div>
 );
 
-const SignUpWizard = ({ onComplete, submitting = false }) => {
+const ProfileCompletionWizard = ({ defaultName = '', onComplete, submitting = false }) => {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    name: '',
+    name: defaultName,
     country: '',
     gpa: '',
     satScore: '',
     ieltsScore: '',
     preferredSubject: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
   });
 
   const set = (key) => (e) => {
@@ -77,14 +74,6 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
       case 2:
         if (!form.preferredSubject) return 'Please choose your preferred subject.';
         break;
-      case 3:
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-          return 'Please enter a valid email address.';
-        if (form.password.length < 6)
-          return 'Password must be at least 6 characters.';
-        if (form.password !== form.confirmPassword)
-          return 'Passwords do not match.';
-        break;
       default:
         break;
     }
@@ -110,7 +99,7 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (step < 3) return next();
+    if (step < 2) return next();
     const msg = validate();
     if (msg) return setError(msg);
     onComplete({
@@ -120,8 +109,6 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
       satScore: form.satScore ? parseInt(form.satScore, 10) : null,
       ieltsScore: form.ieltsScore ? parseFloat(form.ieltsScore) : null,
       preferredSubject: form.preferredSubject,
-      email: form.email.trim(),
-      password: form.password,
     });
   };
 
@@ -175,13 +162,7 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
           </div>
         );
       default:
-        return (
-          <>
-            <Field id="email" label="Email Address" autoComplete="email" icon="mail" placeholder="Enter your email address" type="email" value={form.email} onChange={set('email')} />
-            <Field id="password" label="Password" autoComplete="new-password" icon="lock" placeholder="Create a password" type="password" value={form.password} onChange={set('password')} />
-            <Field id="confirmPassword" label="Confirm Password" autoComplete="new-password" icon="lock_reset" placeholder="Re-enter your password" type="password" value={form.confirmPassword} onChange={set('confirmPassword')} />
-          </>
-        );
+        return null;
     }
   };
 
@@ -191,13 +172,12 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
       onSubmit={handleSubmit}
       className="h-full w-full flex flex-col items-center bg-white px-6 md:px-12 py-8 overflow-y-auto"
     >
-      {/* Vertically-centered wrapper (my-auto avoids the justify-center clipping bug) */}
       <div className="my-auto w-full flex flex-col items-center">
         <h2 className="text-[22px] md:text-2xl font-extrabold text-primary w-full max-w-sm mb-5">
-          Create Account
+          Complete Your Profile
         </h2>
 
-        {/* Progress indicator — connectors flex to touch each circle */}
+        {/* Progress indicator */}
         <div className="flex items-center w-full max-w-sm mb-6">
           {STEPS.map((s, i) => {
             const done = i < step;
@@ -233,7 +213,7 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
           })}
         </div>
 
-        {/* Step labels — mirrored structure so labels align under circle centers */}
+        {/* Step labels */}
         <div className="flex items-center w-full max-w-sm mb-6 hidden sm:flex">
           {STEPS.map((s, i) => (
             <Fragment key={s}>
@@ -249,12 +229,12 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
           ))}
         </div>
 
-        {/* Step content — fixed min-height sized to the tallest step (Scores: 3 inputs + note ≈ 266px measured) so the title, steps, and buttons stay put */}
+        {/* Step content */}
         <div key={step} className="w-full max-w-sm space-y-3 mb-4 step-slide min-h-[272px]">
           {stepContent()}
         </div>
 
-        {/* Error — above the buttons, fixed height prevents layout shift */}
+        {/* Error */}
         <div className="w-full max-w-sm h-[16px] flex items-center justify-center">
           {error && (
             <p role="alert" className="text-red-500 text-[11px] font-semibold text-center animate-fade-in">
@@ -263,7 +243,7 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
           )}
         </div>
 
-        {/* Navigation — Back + Continue */}
+        {/* Navigation */}
         <div className="flex items-center gap-3 w-full max-w-sm min-h-12">
           {step > 0 && (
             <button
@@ -280,7 +260,7 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
             disabled={submitting}
             className={`${step > 0 ? 'flex-[2]' : 'flex-1'} py-3 bg-primary text-white rounded-full font-bold text-[11px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed`}
           >
-            {submitting ? 'Creating…' : step === 3 ? 'Create Account' : 'Continue'}
+            {submitting ? 'Saving…' : step === 2 ? 'Complete Profile' : 'Continue'}
           </button>
         </div>
       </div>
@@ -288,4 +268,4 @@ const SignUpWizard = ({ onComplete, submitting = false }) => {
   );
 };
 
-export default SignUpWizard;
+export default ProfileCompletionWizard;

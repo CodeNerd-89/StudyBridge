@@ -13,7 +13,8 @@ model Student {
   id               String          @id @default(cuid())
   name             String          @db.VarChar(100)
   email            String          @unique @db.VarChar(255)
-  password         String          @db.VarChar(255)
+  password         String?         @db.VarChar(255)
+  googleId         String?         @unique
   phone            String?         @db.VarChar(20)
   country          String          @db.VarChar(100)
   institution      String?         @db.VarChar(150)

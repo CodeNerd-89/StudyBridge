@@ -134,7 +134,7 @@ const ProfilePage = () => {
               {gpa}
             </span>
             <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
-              GPA
+              CGPA
             </span>
           </div>
           <div className="text-center">

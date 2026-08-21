@@ -1,5 +1,10 @@
 import * as authService from './auth.service.js';
 
+export const googleLogin = async (req, res) => {
+  const result = await authService.googleLogin(req.body);
+  return res.status(result.status).json(result.body);
+};
+
 export const register = async (req, res) => {
   const result = await authService.register(req.body);
   return res.status(result.status).json(result.body);
@@ -12,5 +17,10 @@ export const login = async (req, res) => {
 
 export const me = async (req, res) => {
   const result = await authService.me(req.user.id);
+  return res.status(result.status).json(result.body);
+};
+
+export const completeProfile = async (req, res) => {
+  const result = await authService.completeProfile(req.user.id, req.body);
   return res.status(result.status).json(result.body);
 };

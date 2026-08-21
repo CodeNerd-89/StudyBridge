@@ -1,6 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../config/database.js';
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  'postmessage',
+);
 
 const signToken = (student) =>
   jwt.sign(
@@ -9,9 +16,9 @@ const signToken = (student) =>
     { expiresIn: '7d' }
   );
 
-// Strip the password hash before returning user data to the client
+// Strip sensitive fields before returning user data to the client
 const publicUser = (student) => {
-  const { password, ...rest } = student;
+  const { password, googleId, ...rest } = student;
   return rest;
 };
 
@@ -112,6 +119,133 @@ export const me = async (userId) => {
   } catch (err) {
     console.error('Me error:', err);
     return { status: 500, body: { message: 'Something went wrong while loading your profile.' } };
+  }
+};
+
+export const googleLogin = async (payload = {}) => {
+  const { credential, code } = payload;
+
+  try {
+    let googleUserId, email, name, picture;
+
+    if (credential) {
+      // ID token flow
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const idPayload = ticket.getPayload();
+      googleUserId = idPayload.sub;
+      email = idPayload.email;
+      name = idPayload.name;
+      picture = idPayload.picture;
+    } else if (code) {
+      // Auth code flow — exchange code for tokens
+      const { tokens } = await googleClient.getToken(code);
+      const ticket = await googleClient.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const idPayload = ticket.getPayload();
+      googleUserId = idPayload.sub;
+      email = idPayload.email;
+      name = idPayload.name;
+      picture = idPayload.picture;
+    } else {
+      return { status: 400, body: { message: 'Google credential or code is required.' } };
+    }
+
+    if (!email) {
+      return { status: 400, body: { message: 'Google account has no email.' } };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if a student with this googleId already exists
+    let student = await prisma.student.findUnique({ where: { googleId: googleUserId } });
+
+    if (!student) {
+      // Check if a student with this email already exists (registered via email/password)
+      student = await prisma.student.findUnique({ where: { email: normalizedEmail } });
+
+      if (student) {
+        // Link the Google account to the existing student
+        student = await prisma.student.update({
+          where: { id: student.id },
+          data: {
+            googleId: googleUserId,
+            profileImage: student.profileImage || picture || null,
+          },
+        });
+      } else {
+        // Create a new student from the Google profile
+        student = await prisma.student.create({
+          data: {
+            name: name || 'Google User',
+            email: normalizedEmail,
+            googleId: googleUserId,
+            password: null,
+            country: 'Not specified',
+            profileImage: picture || null,
+          },
+        });
+      }
+    }
+
+    const token = signToken(student);
+    const isNewUser = !student.country || student.country === 'Not specified';
+
+    return {
+      status: 200,
+      body: { success: true, token, user: publicUser(student), isNewUser },
+    };
+  } catch (err) {
+    console.error('Google login error:', err?.message || err);
+
+    if (err?.message?.includes('Token used too late') || err?.message?.includes('invalid_token')) {
+      return { status: 401, body: { message: 'Google credential is invalid or expired.' } };
+    }
+    if (err?.message?.includes('Wrong number of segments')) {
+      return { status: 401, body: { message: 'Invalid Google credential format.' } };
+    }
+
+    return { status: 500, body: { message: 'Google authentication failed. Please try again.' } };
+  }
+};
+
+export const completeProfile = async (userId, payload = {}) => {
+  if (!userId) {
+    return { status: 401, body: { message: 'Unauthorized' } };
+  }
+
+  const { name, country, cgpa, satScore, ieltsScore, preferredSubject } = payload;
+
+  if (!name || !name.trim() || !country || !country.trim()) {
+    return { status: 400, body: { message: 'Name and country are required.' } };
+  }
+
+  try {
+    const student = await prisma.student.update({
+      where: { id: userId },
+      data: {
+        name: name.trim(),
+        country: country.trim(),
+        cgpa: toNumberOrNull(cgpa),
+        satScore: toNumberOrNull(satScore),
+        ieltsScore: toNumberOrNull(ieltsScore),
+        preferredSubject: preferredSubject?.trim() || null,
+      },
+    });
+
+    const token = signToken(student);
+
+    return {
+      status: 200,
+      body: { success: true, message: 'Profile completed.', token, user: publicUser(student) },
+    };
+  } catch (err) {
+    console.error('Complete profile error:', err);
+    return { status: 500, body: { message: 'Something went wrong while updating your profile.' } };
   }
 };
 
