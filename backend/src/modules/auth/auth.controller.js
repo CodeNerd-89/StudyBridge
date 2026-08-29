@@ -24,3 +24,8 @@ export const completeProfile = async (req, res) => {
   const result = await authService.completeProfile(req.user.id, req.body);
   return res.status(result.status).json(result.body);
 };
+
+export const getStudentCount = async (req, res) => {
+  const result = await authService.getStudentCount();
+  return res.status(result.status).json(result.body);
+};

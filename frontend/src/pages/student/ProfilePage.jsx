@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { getBookmarks, removeBookmark } from '../../services/bookmarks';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face';
@@ -9,7 +11,7 @@ const DEMO_USER = {
   tagline: 'Studying Computer Science at Stanford University Aspirant. Focusing on the 2024 Early Action cycle.',
   gpa: '3.94',
   sat: '1540',
-  readiness: '78%',
+  ielts: '7.0',
 };
 
 // Cached profile saved at login/registration, so the page isn't blank while /me loads
@@ -25,7 +27,18 @@ const getCachedUser = () => {
 const ProfilePage = () => {
   const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
   const [user, setUser] = useState(getCachedUser());
+  const [bookmarks, setBookmarks] = useState(getBookmarks());
+  const [manageMode, setManageMode] = useState(false);
+  const [editingScores, setEditingScores] = useState(false);
+  const [scoreDraft, setScoreDraft] = useState({ cgpa: '', satScore: '', ieltsScore: '' });
+  const [savingScores, setSavingScores] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const refresh = () => setBookmarks(getBookmarks());
+    window.addEventListener('bookmarkschange', refresh);
+    return () => window.removeEventListener('bookmarkschange', refresh);
+  }, []);
 
   // Load the logged-in student's real data (name, GPA, SAT, …) from the backend
   useEffect(() => {
@@ -89,7 +102,41 @@ const ProfilePage = () => {
     : DEMO_USER.tagline;
   const gpa = user ? (user.cgpa != null ? String(user.cgpa) : '—') : DEMO_USER.gpa;
   const sat = user ? (user.satScore != null ? String(user.satScore) : '—') : DEMO_USER.sat;
-  const readiness = DEMO_USER.readiness;
+  const ielts = user ? (user.ieltsScore != null ? String(user.ieltsScore) : '—') : DEMO_USER.ielts;
+
+  const startEditingScores = () => {
+    setScoreDraft({
+      cgpa: user?.cgpa != null ? String(user.cgpa) : '',
+      satScore: user?.satScore != null ? String(user.satScore) : '',
+      ieltsScore: user?.ieltsScore != null ? String(user.ieltsScore) : '',
+    });
+    setEditingScores(true);
+  };
+
+  const saveScores = async () => {
+    setSavingScores(true);
+    try {
+      const { data } = await api.put('/auth/profile', {
+        name: user?.name || DEMO_USER.name,
+        country: user?.country || '',
+        cgpa: scoreDraft.cgpa || null,
+        satScore: scoreDraft.satScore || null,
+        ieltsScore: scoreDraft.ieltsScore || null,
+        preferredSubject: user?.preferredSubject || null,
+      });
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('userProfile', JSON.stringify(data.user));
+      }
+      if (data.token) localStorage.setItem('token', data.token);
+      window.dispatchEvent(new Event('profileupdate'));
+    } catch {
+      // silently keep old values
+    } finally {
+      setSavingScores(false);
+      setEditingScores(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -128,30 +175,79 @@ const ProfilePage = () => {
           {tagline}
         </p>
 
-        <div className="flex justify-center gap-16 border-y border-outline-variant/50 py-10">
-          <div className="text-center">
-            <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-deep-navy">
-              {gpa}
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
-              CGPA
-            </span>
+        <div className="border-y border-outline-variant/50 py-10">
+          <div className="flex justify-center gap-6 sm:gap-10">
+            {[
+              { key: 'cgpa', label: 'CGPA', value: gpa, color: 'accent' },
+              { key: 'satScore', label: 'SAT', value: sat, color: 'deep-navy' },
+              { key: 'ieltsScore', label: 'IELTS', value: ielts, color: 'deep-navy' },
+            ].map((s) => (
+              <div
+                key={s.key}
+                className={`group relative flex flex-col items-center rounded-2xl px-6 py-5 transition-all duration-300 ${
+                  editingScores
+                    ? 'bg-white shadow-[0_2px_16px_rgba(26,43,72,0.08)] scale-100'
+                    : 'hover:bg-white hover:shadow-[0_2px_12px_rgba(26,43,72,0.06)]'
+                }`}
+              >
+                {editingScores ? (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={scoreDraft[s.key]}
+                      onChange={(e) => setScoreDraft((p) => ({ ...p, [s.key]: e.target.value }))}
+                      className={`block w-20 text-center bg-transparent border-b-2 border-accent font-['Plus_Jakarta_Sans'] text-[28px] font-bold outline-none ${
+                        s.key === 'cgpa' ? 'text-accent' : 'text-deep-navy'
+                      }`}
+                      placeholder="—"
+                      inputMode={s.key === 'satScore' ? 'numeric' : 'decimal'}
+                      autoFocus={s.key === 'cgpa'}
+                    />
+                    <div className="absolute -bottom-0.5 left-1/2 h-0.5 w-0 bg-accent transition-all duration-300 group-hover:full -translate-x-1/2" style={{ width: '100%' }} />
+                  </div>
+                ) : (
+                  <span className={`block font-['Plus_Jakarta_Sans'] text-[28px] font-bold ${
+                    s.key === 'cgpa' ? 'text-accent' : 'text-deep-navy'
+                  }`}>
+                    {s.value}
+                  </span>
+                )}
+                <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/50">
+                  {s.label}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="text-center">
-            <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-deep-navy">
-              {sat}
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
-              SAT
-            </span>
-          </div>
-          <div className="text-center">
-            <span className="block font-['Plus_Jakarta_Sans'] text-[28px] font-bold text-accent">
-              {readiness}
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
-              Readiness
-            </span>
+          <div className="mt-5 flex justify-center">
+            {editingScores ? (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={saveScores}
+                  disabled={savingScores}
+                  className="flex items-center gap-1.5 rounded-full bg-accent px-6 py-2 text-xs font-bold text-white shadow-md shadow-accent/20 transition-all hover:shadow-lg hover:shadow-accent/30 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-[14px]">{savingScores ? 'hourglass_top' : 'check'}</span>
+                  {savingScores ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingScores(false)}
+                  className="rounded-full border border-outline bg-white px-5 py-2 text-xs font-bold text-on-surface transition-all hover:bg-surface-container-low hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startEditingScores}
+                className="group/btn flex items-center gap-2 rounded-full border border-outline/60 bg-white px-5 py-2 text-xs font-bold text-on-surface-variant transition-all hover:border-accent hover:text-accent hover:shadow-md hover:shadow-accent/10 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span className="material-symbols-outlined text-[15px] transition-transform group-hover/btn:rotate-[-12deg]">edit</span>
+                Edit Scores
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -195,41 +291,75 @@ const ProfilePage = () => {
             <h3 className="font-['Plus_Jakarta_Sans'] text-[28px] font-semibold text-deep-navy">
               University Pipeline
             </h3>
-            <button
-              type="button"
-              className="text-sm font-semibold text-accent transition hover:underline"
-            >
-              Manage All
-            </button>
+            {bookmarks.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManageMode(!manageMode)}
+                className="text-sm font-semibold text-accent transition hover:underline"
+              >
+                {manageMode ? 'Done' : 'Manage All'}
+              </button>
+            )}
           </div>
 
           <div className="space-y-4">
-            {[
-              { initials: 'SU', name: 'Stanford University', meta: 'Early Action • 94% Match' },
-              { initials: 'MIT', name: 'MIT', meta: 'Regular Decision • 88% Match' },
-            ].map((uni) => (
-              <div
-                key={uni.name}
-                className="group flex items-center justify-between rounded-xl border border-outline-variant/50 bg-white p-6 transition-all hover:shadow-lg hover:shadow-on-surface/5"
-              >
-                <div className="flex items-center gap-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-deep-navy font-bold text-white">
-                    {uni.initials}
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-deep-navy">
-                      {uni.name}
-                    </h4>
-                    <p className="text-sm text-on-surface-variant">
-                      {uni.meta}
-                    </p>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-accent">
-                  chevron_right
-                </span>
+            {bookmarks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-outline-variant/50 bg-white p-8 text-center">
+                <span className="material-symbols-outlined mb-2 text-3xl text-on-surface-variant/40">bookmark_border</span>
+                <p className="text-sm text-on-surface-variant">No bookmarked universities yet.</p>
+                <Link to="/universities" className="mt-3 inline-block text-sm font-semibold text-accent hover:underline">
+                  Browse Universities
+                </Link>
               </div>
-            ))}
+            ) : (
+              bookmarks.map((uni) => {
+                const initials = uni.name
+                  .split(' ')
+                  .filter((w) => w.length > 2 || w === 'MIT')
+                  .slice(0, 2)
+                  .map((w) => w[0])
+                  .join('')
+                  .toUpperCase();
+                const Wrapper = manageMode ? 'div' : Link;
+                const wrapperProps = manageMode
+                  ? { key: uni.id }
+                  : { key: uni.id, to: '/universities', state: { universityId: uni.id } };
+                return (
+                  <Wrapper
+                    {...wrapperProps}
+                    className="group flex items-center justify-between rounded-xl border border-outline-variant/50 bg-white p-6 transition-all hover:shadow-lg hover:shadow-on-surface/5"
+                  >
+                    <div className="flex items-center gap-6">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-deep-navy font-bold text-white">
+                        {initials}
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-deep-navy">
+                          {uni.name}
+                        </h4>
+                        <p className="text-sm text-on-surface-variant">
+                          {[uni.ranking && `QS #${uni.ranking}`, uni.country].filter(Boolean).join(' • ')}
+                        </p>
+                      </div>
+                    </div>
+                    {manageMode ? (
+                      <button
+                        type="button"
+                        onClick={() => removeBookmark(uni.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-error transition hover:bg-error/10"
+                        title="Remove from pipeline"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    ) : (
+                      <span className="material-symbols-outlined text-on-surface-variant transition-colors group-hover:text-accent">
+                        chevron_right
+                      </span>
+                    )}
+                  </Wrapper>
+                );
+              })
+            )}
           </div>
         </div>
 

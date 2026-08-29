@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import UniversityFilterBar from '../../features/universities/UniversityFilterBar';
 import UniCard from '../../features/universities/UniCard';
@@ -22,6 +22,8 @@ const estimateMatch = (ranking, acceptanceRate) => {
 
 const UniversityPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   // Start with instant initial data so page is never blank
   const [universities, setUniversities] = useState(initialUniversities);
   const [availableSubjects, setAvailableSubjects] = useState([
@@ -41,10 +43,12 @@ const UniversityPage = () => {
   ]);
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const initialSearch = searchParams.get('search') || '';
+  const initialCountry = searchParams.get('country') || 'All';
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
 
   // Applied Filter states (updated only when user clicks Apply Filters or Reset)
-  const [appliedCountry, setAppliedCountry] = useState('All');
+  const [appliedCountry, setAppliedCountry] = useState(initialCountry);
   const [appliedSubject, setAppliedSubject] = useState('All');
   const [appliedBudget, setAppliedBudget] = useState('All');
   const [appliedIelts, setAppliedIelts] = useState('All');
@@ -52,6 +56,36 @@ const UniversityPage = () => {
 
   // Detail Modal state
   const [activeModalUni, setActiveModalUni] = useState(null);
+
+  // Sync search / country params if updated from URL
+  useEffect(() => {
+    const q = searchParams.get('search');
+    const c = searchParams.get('country');
+    if (q !== null && q !== undefined) {
+      setSearchQuery(q);
+    }
+    if (c) {
+      setAppliedCountry(c);
+    }
+  }, [searchParams]);
+
+  // Auto-open university detail or apply search when navigated from homepage with state
+  useEffect(() => {
+    const targetId = location.state?.universityId;
+    const targetSearch = location.state?.search;
+    if (targetId) {
+      const uni = universities.find((u) => u.id === targetId);
+      if (uni) {
+        setActiveModalUni(uni);
+      }
+    }
+    if (targetSearch) {
+      setSearchQuery(targetSearch);
+    }
+    if (targetId || targetSearch) {
+      window.history.replaceState({}, '');
+    }
+  }, [location.state, universities]);
 
   // Load available subjects from backend in background
   useEffect(() => {

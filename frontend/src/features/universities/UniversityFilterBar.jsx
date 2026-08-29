@@ -57,6 +57,17 @@ const UniversityFilterBar = ({
 
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Read ?country= from URL on first mount and auto-apply
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlCountry = params.get('country');
+    if (urlCountry && urlCountry !== 'All') {
+      setStagedCountry(urlCountry);
+      onApplyFilters({ country: urlCountry, subject: appliedSubject, budget: appliedBudget, ielts: appliedIelts, sort: appliedSort });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sync staged state when applied filters change externally (e.g. reset)
   useEffect(() => {
     setStagedCountry(appliedCountry);

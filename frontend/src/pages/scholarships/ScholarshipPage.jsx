@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import {
   ScholarshipCard,
@@ -13,6 +13,7 @@ import { initialScholarships } from '../../data/initialData';
 const ScholarshipPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Instant initial data
   const [scholarships, setScholarships] = useState(initialScholarships);
@@ -41,13 +42,30 @@ const ScholarshipPage = () => {
   // Modal state
   const [activeModalScholarship, setActiveModalScholarship] = useState(null);
 
-  // Sync search param if updated from URL
+  // Sync search param if updated from URL or location state
   useEffect(() => {
     const q = searchParams.get('search');
     if (q) {
       setSearchQuery(q);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const targetId = location.state?.scholarshipId;
+    const targetSearch = location.state?.search;
+    if (targetId) {
+      const sch = scholarships.find((s) => s.id === targetId);
+      if (sch) {
+        setActiveModalScholarship(sch);
+      }
+    }
+    if (targetSearch) {
+      setSearchQuery(targetSearch);
+    }
+    if (targetId || targetSearch) {
+      window.history.replaceState({}, '');
+    }
+  }, [location.state, scholarships]);
 
   // Load unique countries in background
   useEffect(() => {

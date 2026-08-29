@@ -1,7 +1,44 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import TypewriterHero from '../components/common/TypewriterHero';
 
+const formatCount = (n) => `${(Math.floor(n / 10) * 10).toLocaleString()}+`;
+
+const STREAM_SUBJECT_MAP = {
+  Engineering: 'Engineering',
+  Management: 'Business',
+  Medical: 'Medicine',
+  Design: 'Architecture',
+  Law: 'Law',
+};
+
 const Home = () => {
+  const [counts, setCounts] = useState({ universities: null, scholarships: null });
+  const [activeStream, setActiveStream] = useState('Engineering');
+  const [streamUniversities, setStreamUniversities] = useState([]);
+
+  useEffect(() => {
+    api.get('/stats')
+      .then(({ data }) => {
+        const d = data?.data;
+        setCounts({ universities: d?.universityCount ?? null, scholarships: d?.scholarshipCount ?? null });
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const subject = STREAM_SUBJECT_MAP[activeStream];
+    if (!subject) return;
+    api.get('/universities', { params: { subject, limit: 3 } })
+      .then(({ data }) => {
+        setStreamUniversities(data?.data ?? []);
+      })
+      .catch(() => {
+        setStreamUniversities([]);
+      });
+  }, [activeStream]);
+
   return (
     <div className="overflow-x-hidden">
       {/* Hero — TypewriterHero kept from original */}
@@ -104,11 +141,12 @@ const Home = () => {
 
           {/* Stream Tabs */}
           <div className="mb-16 flex flex-wrap justify-center gap-3">
-            {['Engineering', 'Management', 'Medical', 'Design', 'Law'].map((stream, i) => (
+            {['Engineering', 'Management', 'Medical', 'Design', 'Law'].map((stream) => (
               <button
                 key={stream}
+                onClick={() => setActiveStream(stream)}
                 className={`academic-shadow rounded-xl px-8 py-3 text-sm font-bold transition-all ${
-                  i === 0
+                  activeStream === stream
                     ? 'bg-primary text-white'
                     : 'border border-outline bg-white text-text-muted hover:border-primary hover:text-primary'
                 }`}
@@ -120,24 +158,29 @@ const Home = () => {
 
           {/* Three Column Grid */}
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
-            {/* Colleges */}
+            {/* Universities */}
             <div className="academic-shadow-hover rounded-3xl border border-outline bg-white p-8 transition-all">
               <div className="mb-8 flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-xl font-extrabold text-primary">
-                  <span className="material-symbols-outlined text-accent">apartment</span> Colleges
+                  <span className="material-symbols-outlined text-accent">apartment</span> Universities
                 </h4>
               </div>
               <div className="space-y-4">
-                {['Alliance University', 'MIT Manipal', 'Bennett University'].map((name) => (
-                  <Link
-                    key={name}
-                    to="/universities"
-                    className="group flex items-center justify-between rounded-2xl p-4 transition-all hover:bg-background"
-                  >
-                    <span className="font-bold text-primary transition-transform group-hover:translate-x-1">{name}</span>
-                    <span className="material-symbols-outlined text-text-muted">chevron_right</span>
-                  </Link>
-                ))}
+                {streamUniversities.length > 0 ? (
+                  streamUniversities.map((uni) => (
+                    <Link
+                      key={uni.id}
+                      to={`/universities?search=${encodeURIComponent(uni.name)}`}
+                      state={{ universityId: uni.id, search: uni.name }}
+                      className="group flex items-center justify-between rounded-2xl p-4 transition-all hover:bg-background"
+                    >
+                      <span className="font-bold text-primary transition-transform group-hover:translate-x-1">{uni.name}</span>
+                      <span className="material-symbols-outlined text-text-muted">chevron_right</span>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="py-4 text-center text-sm text-text-muted">No universities found for this stream.</p>
+                )}
               </div>
               <Link to="/universities" className="mt-10 block text-center text-sm font-extrabold text-accent hover:underline">
                 View Directory
@@ -168,57 +211,59 @@ const Home = () => {
               </a>
             </div>
 
-            {/* Courses */}
+            {/* Scholarships */}
             <div className="academic-shadow-hover rounded-3xl border border-outline bg-white p-8 transition-all">
               <div className="mb-8 flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-xl font-extrabold text-primary">
-                  <span className="material-symbols-outlined text-accent">school</span> Courses
+                  <span className="material-symbols-outlined text-accent">school</span> Scholarships
                 </h4>
+
               </div>
               <div className="space-y-4">
-                {['B.Tech Computer Science', 'B.Tech AI & Data Science', 'Mechanical Engineering'].map((name) => (
-                  <a
+                {['STEM Excellence Grant', 'Global Merit Scholarship', 'Need-Based Financial Aid'].map((name) => (
+                  <Link
                     key={name}
-                    href="#"
+                    to={`/scholarships?search=${encodeURIComponent(name)}`}
+                    state={{ search: name }}
                     className="group flex items-center justify-between rounded-2xl p-4 transition-all hover:bg-background"
                   >
                     <span className="font-bold text-primary transition-transform group-hover:translate-x-1">{name}</span>
                     <span className="material-symbols-outlined text-text-muted">chevron_right</span>
-                  </a>
+                  </Link>
                 ))}
               </div>
-              <a href="#" className="mt-10 block text-center text-sm font-extrabold text-accent hover:underline">
-                Course Finder
-              </a>
+              <Link to="/scholarships" className="mt-10 block text-center text-sm font-extrabold text-accent hover:underline">
+                Browse Scholarships
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Premier Colleges */}
+      {/* Top Universities */}
       <section className="bg-primary py-[120px] text-white">
         <div className="mx-auto max-w-[1200px] px-8">
           <div className="mb-16 flex flex-col items-end justify-between gap-8 md:flex-row">
             <div className="max-w-2xl">
-              <h2 className="mb-4 text-4xl font-extrabold tracking-tight">Top Premier Institutions</h2>
+              <h2 className="mb-4 text-4xl font-extrabold tracking-tight">Top Universities</h2>
               <p className="text-lg text-white/70">Partnering with leading universities to shape the leaders of tomorrow.</p>
             </div>
             <Link
               to="/universities"
               className="academic-shadow whitespace-nowrap rounded-xl bg-accent px-10 py-4 font-bold text-white transition-all hover:bg-opacity-90"
             >
-              Explore Premier Colleges
+              Explore Universities
             </Link>
           </div>
 
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { letter: 'A', name: 'Amity University', location: 'Mumbai, MH', rating: '4.8', img: 'https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=300&fit=crop' },
-              { letter: 'B', name: 'Bennett University', location: 'Greater Noida, UP', rating: '4.5', img: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop' },
-              { letter: 'C', name: 'Centurion University', location: 'Bhubaneswar, OD', rating: '4.2', img: 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&h=300&fit=crop' },
-              { letter: 'G', name: 'GIET University', location: 'Gunupur, OD', rating: '4.9', img: 'https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=400&h=300&fit=crop' },
+              { id: 'uni-1', name: 'Harvard University', initials: 'HU', location: 'Cambridge, MA', qsRanking: 1, img: 'https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=300&fit=crop' },
+              { id: 'uni-2', name: 'Massachusetts Institute of Technology', initials: 'MIT', location: 'Cambridge, MA', qsRanking: 2, img: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop' },
+              { id: 'uni-3', name: 'Stanford University', initials: 'SU', location: 'Stanford, CA', qsRanking: 3, img: 'https://www.immerse.education/wp-content/uploads/2025/06/stanford-university.jpg?w=400&h=300&fit=crop' },
+              { id: 'uni-4', name: 'University of Oxford', initials: 'UO', location: 'Oxford, UK', qsRanking: 4, img: 'https://upload.wikimedia.org/wikipedia/commons/8/8f/University_College%2C_Oxford_-_Main_Quad.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original?w=400&h=300&fit=crop' },
             ].map((college) => (
-              <div key={college.name} className="academic-shadow-hover group overflow-hidden rounded-3xl bg-white text-text-main transition-all duration-500">
+              <div key={college.id} className="academic-shadow-hover group overflow-hidden rounded-3xl bg-white text-text-main transition-all duration-500">
                 <div className="relative h-48 overflow-hidden">
                   <img
                     alt={`${college.name} Campus`}
@@ -226,21 +271,25 @@ const Home = () => {
                     src={college.img}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                  <div className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1 text-[10px] font-extrabold text-white">PREMIER</div>
+
                 </div>
                 <div className="p-8">
                   <div className="mb-4 flex items-start justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary font-bold text-primary">{college.letter}</div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary font-bold text-primary text-sm">{college.initials}</div>
                     <div className="flex items-center gap-1 text-sm font-bold text-accent">
-                      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: '"FILL" 1' }}>star</span>
-                      {college.rating}
+                      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: '"FILL" 1' }}>emoji_events</span>
+                      #{college.qsRanking}
                     </div>
                   </div>
                   <h5 className="mb-1 truncate text-lg font-extrabold text-primary">{college.name}</h5>
                   <p className="mb-6 text-xs font-semibold text-text-muted">{college.location}</p>
-                  <button className="w-full rounded-xl border-2 border-outline py-3 text-sm font-bold text-primary transition-all hover:border-primary">
-                    View Campus
-                  </button>
+                  <Link
+                    to={`/universities?search=${encodeURIComponent(college.name)}`}
+                    state={{ universityId: college.id, search: college.name }}
+                    className="block w-full rounded-xl border-2 border-outline py-3 text-center text-sm font-bold text-primary transition-all hover:border-primary"
+                  >
+                    View Details
+                  </Link>
                 </div>
               </div>
             ))}
@@ -248,29 +297,32 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Top Cities */}
+      {/* Top Countries */}
       <section className="bg-background py-[120px]">
         <div className="mx-auto max-w-[1200px] px-8">
           <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-extrabold tracking-tight text-primary">Top Cities to Study</h2>
-            <p className="mx-auto max-w-xl text-text-muted">Discover the most vibrant educational hubs across the world.</p>
+            <h2 className="mb-4 text-4xl font-extrabold tracking-tight text-primary">Top Countries to Study</h2>
+            <p className="mx-auto max-w-xl text-text-muted">Explore world-class universities across the most popular study destinations.</p>
           </div>
           <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
             {[
-              { city: 'Pune', state: 'MAHARASHTRA' },
-              { city: 'Mumbai', state: 'MAHARASHTRA' },
-              { city: 'Gurgaon', state: 'HARYANA' },
-              { city: 'Bhubaneswar', state: 'ODISHA' },
-              { city: 'Noida', state: 'UTTAR PRADESH' },
-              { city: 'Hyderabad', state: 'TELANGANA' },
+              { country: 'USA', flag: '🇺🇸' },
+              { country: 'UK', flag: '🇬🇧' },
+              { country: 'Canada', flag: '🇨🇦' },
+              { country: 'Australia', flag: '🇦🇺' },
+              { country: 'Germany', flag: '🇩🇪' },
+              { country: 'Singapore', flag: '🇸🇬' },
             ].map((item) => (
-              <div key={item.city} className="academic-shadow-hover group rounded-2xl border border-outline bg-white p-6 text-center transition-all">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary transition-all group-hover:bg-primary group-hover:text-white">
-                  <span className="material-symbols-outlined">location_city</span>
+              <Link
+                key={item.country}
+                to={`/universities?country=${encodeURIComponent(item.country)}`}
+                className="academic-shadow-hover group rounded-2xl border border-outline bg-white p-6 text-center transition-all hover:shadow-lg hover:shadow-on-surface/5"
+              >
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-2xl transition-all group-hover:bg-primary group-hover:scale-110">
+                  {item.flag}
                 </div>
-                <h6 className="font-bold text-primary">{item.city}</h6>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{item.state}</p>
-              </div>
+                <h6 className="font-bold text-primary">{item.country}</h6>
+              </Link>
             ))}
           </div>
         </div>

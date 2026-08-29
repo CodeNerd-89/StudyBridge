@@ -136,7 +136,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="font-['Plus_Jakarta_Sans'] h-screen w-screen bg-background overflow-hidden">
+    <div className="font-['Plus_Jakarta_Sans'] h-dvh w-screen bg-background overflow-hidden">
       {/* StudyBridge Logo — matches TopNav position exactly, teal accent */}
       <div className="fixed top-0 left-0 z-[200] pointer-events-none flex items-center h-20 px-8">
         <Link to="/" className="text-2xl font-extrabold tracking-tight text-accent pointer-events-auto">
@@ -146,7 +146,7 @@ const LoginPage = () => {
 
       {/* ===== DESKTOP LAYOUT (md+) ===== */}
       <main
-        className={`hidden md:flex container-slider relative w-screen h-screen bg-white overflow-hidden shadow-2xl ${active ? 'right-panel-active' : ''}`}
+        className={`hidden md:flex container-slider relative w-screen h-dvh bg-white overflow-hidden shadow-2xl ${active ? 'right-panel-active' : ''}`}
       >
         {/* Sign Up Form */}
         <div className="form-container sign-up-container" data-purpose="sign-up-form">
@@ -272,11 +272,11 @@ const LoginPage = () => {
 
       {/* ===== MOBILE LAYOUT (<md) ===== */}
       <main
-        className={`flex md:hidden flex-col w-screen h-screen overflow-hidden ${active ? 'right-panel-active' : ''}`}
+        className={`flex md:hidden flex-col w-screen h-dvh overflow-hidden ${active ? 'right-panel-active' : ''}`}
         id="auth-root-mobile"
       >
         {/* TOP INFO PANEL (40% height) */}
-        <div className="relative h-[40%] bg-[#1a2b48] overflow-hidden z-20 shadow-xl">
+        <div className="relative h-[40dvh] bg-[#1a2b48] overflow-hidden z-20 shadow-xl">
           {/* Background decoration */}
           <div className="absolute inset-0 opacity-20 pointer-events-none">
             <div className="absolute -top-24 -left-24 w-64 h-64 bg-accent rounded-full blur-[100px]"></div>
@@ -318,7 +318,7 @@ const LoginPage = () => {
         </div>
 
         {/* BOTTOM FORM PANEL (60% height) */}
-        <div className="relative h-[60%] bg-[#f8f9ff] z-10 overflow-hidden">
+        <div className="relative h-[60dvh] bg-[#f8f9ff] z-10 overflow-hidden">
           <div className="mobile-slider h-[200%] w-full" id="form-panel-inner">
             {/* Form 1: SIGN IN */}
             <div className="relative h-1/2 flex flex-col px-8 py-8 overflow-y-auto">
@@ -406,7 +406,7 @@ const LoginPage = () => {
         .form-container {
           position: absolute;
           top: 0;
-          height: 100%;
+          height: 100dvh;
           transition: all 0.6s ease-in-out;
         }
         .sign-in-container {
@@ -433,7 +433,7 @@ const LoginPage = () => {
           top: 0;
           left: 60%;
           width: 40%;
-          height: 100%;
+          height: 100dvh;
           overflow: hidden;
           transition: transform 0.6s ease-in-out;
           z-index: 100;
@@ -447,7 +447,7 @@ const LoginPage = () => {
           color: #FFFFFF;
           position: relative;
           left: -150%;
-          height: 100%;
+          height: 100dvh;
           width: 250%;
           transform: translateX(0);
           transition: transform 0.6s ease-in-out;
@@ -464,7 +464,7 @@ const LoginPage = () => {
           padding: 0 40px;
           text-align: center;
           top: 0;
-          height: 100%;
+          height: 100dvh;
           width: 40%;
           transition: transform 0.6s ease-in-out;
         }

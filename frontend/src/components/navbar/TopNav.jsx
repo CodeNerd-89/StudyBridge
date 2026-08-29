@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
+import { beginLogout } from '../../App';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face';
@@ -24,10 +25,11 @@ const TopNav = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    beginLogout();
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
     window.dispatchEvent(new Event('authchange'));
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   useEffect(() => {
@@ -79,7 +81,7 @@ const TopNav = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden flex-1 items-center justify-center gap-10 md:flex">
-          {items.map((item) => {
+          {items.filter((item) => isLoggedIn || item.to !== '/profile').map((item) => {
             const active = isActive(item.to);
             return (
               <Link

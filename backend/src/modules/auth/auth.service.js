@@ -249,6 +249,16 @@ export const completeProfile = async (userId, payload = {}) => {
   }
 };
 
+export const getStudentCount = async () => {
+  try {
+    const count = await prisma.student.count();
+    return { status: 200, body: { success: true, count } };
+  } catch (err) {
+    console.error('Student count error:', err);
+    return { status: 500, body: { message: 'Could not fetch student count.' } };
+  }
+};
+
 export const login = async (payload = {}) => {
   const { email, password } = payload;
 

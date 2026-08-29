@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { BookOpen, Check, Bookmark, Sparkles, ArrowRight } from 'lucide-react';
+import { isBookmarked, toggleBookmark } from '../../services/bookmarks';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -23,7 +24,15 @@ const UniCard = (props) => {
     onScholarshipClick,
   } = props;
 
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(() => university?.id ? isBookmarked(university.id) : false);
+
+  useEffect(() => {
+    const uniId = university?.id;
+    if (!uniId) return;
+    const check = () => setIsSaved(isBookmarked(uniId));
+    window.addEventListener('bookmarkschange', check);
+    return () => window.removeEventListener('bookmarkschange', check);
+  }, [university?.id]);
 
   // Normalize data whether passed as an object or individual props
   const uni = university || {
@@ -57,7 +66,7 @@ const UniCard = (props) => {
 
   const handleSave = (e) => {
     e.stopPropagation();
-    setIsSaved(!isSaved);
+    toggleBookmark(uni);
   };
 
   const rawCourses = detailedCourses.length > 0 

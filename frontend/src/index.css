@@ -88,3 +88,81 @@ a {
 .step-slide {
   animation: stepSlideIn 0.35s cubic-bezier(0.76, 0, 0.24, 1);
 }
+
+/* View Transition API Animations */
+header.glass-nav {
+  view-transition-name: main-topnav;
+}
+
+nav.fixed {
+  view-transition-name: mobile-bottom-nav;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  animation-fill-mode: both;
+}
+
+/* Slide Forward: target page is to the right in topnav -> new page slides in from right */
+html.slide-forward::view-transition-old(root) {
+  animation-name: slide-out-to-left;
+}
+
+html.slide-forward::view-transition-new(root) {
+  animation-name: slide-in-from-right;
+}
+
+/* Slide Backward: target page is to the left in topnav -> new page slides in from left */
+html.slide-backward::view-transition-old(root) {
+  animation-name: slide-out-to-right;
+}
+
+html.slide-backward::view-transition-new(root) {
+  animation-name: slide-in-from-left;
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0.9;
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
+}

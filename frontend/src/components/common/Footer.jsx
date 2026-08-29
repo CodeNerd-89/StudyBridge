@@ -1,72 +1,86 @@
 import { Link } from 'react-router-dom';
 
+const team = [
+  {
+    name: 'MD. Sajjad Hossain',
+    role: 'Homepage & Student Login',
+    avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sajjad&backgroundColor=b6e3f4',
+    github: 'https://github.com/Fanged-Panda',
+  },
+  {
+    name: 'A M Fardin Hasan',
+    role: 'University & Scholarship',
+    avatar: 'https://api.dicebear.com/10.x/notionists/svg?backgroundColor=c0aede&seed=Fardin',
+    github: 'https://github.com/AM-FArdin',
+  },
+  {
+    name: 'Tahmid Hossain',
+    role: 'Chatbot AI & Notification',
+    avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Tahmid&backgroundColor=ffd5dc',
+    github: 'https://github.com/CodeNerd-89',
+  },
+  {
+    name: 'Hasan Mahmud',
+    role: 'Quiz & Evaluation',
+    avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Hasan&backgroundColor=d1f4d1',
+    github: 'https://github.com/Hasan-mahmud-22',
+  },
+];
+
 const Footer = () => {
   return (
-    <footer className="border-t border-outline bg-white pb-12 pt-24">
+    <footer className="border-t border-outline bg-white pb-8 pt-20">
       <div className="mx-auto max-w-[1200px] px-8">
-        <div className="mb-24 grid grid-cols-1 gap-16 md:grid-cols-4">
-          {/* Brand */}
-          <div className="col-span-1">
-            <h2 className="mb-8 text-2xl font-extrabold text-primary">StudyBridge</h2>
-            <p className="mb-8 text-sm leading-relaxed text-text-muted">
-              Defining the future of academic discovery through technology and expert human-centric mentorship.
-            </p>
-            <div className="flex gap-4">
+        {/* Team Section */}
+        <div className="mb-12 text-center">
+          <h3 className="mb-2 font-['Plus_Jakarta_Sans'] text-xl font-bold text-primary">
+            Meet the Team
+          </h3>
+          <p className="mb-8 text-sm text-text-muted">
+            Built with passion by 4 students as part of our academic project.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {team.map((member) => (
               <a
-                href="#"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-background text-primary transition-all hover:bg-primary hover:text-white"
+                key={member.name}
+                href={member.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col items-center rounded-xl p-5 transition-all duration-300 hover:bg-secondary/30"
               >
-                <span className="material-symbols-outlined text-xl">share</span>
+                <div className="relative mb-3">
+                  <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-outline/30 transition-all duration-300 group-hover:border-accent/50">
+                    <img
+                      src={member.avatar}
+                      alt={member.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-white bg-accent text-white shadow-sm transition-transform duration-300 group-hover:scale-110">
+                    <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></svg>
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-primary transition-colors group-hover:text-accent">
+                  {member.name}
+                </h4>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+                  {member.role}
+                </p>
               </a>
-              <a
-                href="#"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-background text-primary transition-all hover:bg-primary hover:text-white"
-              >
-                <span className="material-symbols-outlined text-xl">camera</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Explore */}
-          <div>
-            <h6 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary">Explore</h6>
-            <ul className="space-y-4 text-sm font-medium text-text-muted">
-              <li><Link to="/quiz" className="transition-colors hover:text-accent">National Exams</Link></li>
-              <li><Link to="/universities" className="transition-colors hover:text-accent">Study Destinations</Link></li>
-              <li><Link to="/universities" className="transition-colors hover:text-accent">Premier Colleges</Link></li>
-              <li><Link to="/scholarships" className="transition-colors hover:text-accent">Scholarship Hub</Link></li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h6 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary">Resources</h6>
-            <ul className="space-y-4 text-sm font-medium text-text-muted">
-              <li><a href="#" className="transition-colors hover:text-accent">Admission Blog</a></li>
-              <li><a href="#" className="transition-colors hover:text-accent">Career Assessment</a></li>
-              <li><a href="#" className="transition-colors hover:text-accent">Success Stories</a></li>
-              <li><a href="#" className="transition-colors hover:text-accent">Newsletter</a></li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h6 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary">Contact</h6>
-            <div className="space-y-6 text-sm text-text-muted">
-              <p className="leading-relaxed">3rd Floor, C Wing, Vega Center, Pune, MH 411042</p>
-              <p className="font-bold text-primary">+91 95958 86633</p>
-              <p className="font-bold text-primary">hello@studybridge.edu</p>
-            </div>
+            ))}
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="flex flex-col items-center justify-between gap-6 border-t border-outline pt-12 md:flex-row">
-          <p className="text-xs font-semibold text-text-muted">© 2024 StudyBridge Academic Solutions Pvt Ltd.</p>
-          <div className="flex gap-10 text-xs font-bold text-text-muted">
-            <a href="#" className="hover:text-primary">Privacy Policy</a>
-            <a href="#" className="hover:text-primary">Terms of Service</a>
-            <a href="#" className="hover:text-primary">Institutional Access</a>
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-outline pt-8 md:flex-row">
+          <p className="text-xs font-semibold text-text-muted">
+            &copy; {new Date().getFullYear()} StudyBridge Academic Solutions. A student project.
+          </p>
+          <div className="flex gap-8 text-xs font-bold text-text-muted">
+            <a href="#" className="transition-colors hover:text-primary">Privacy Policy</a>
+            <a href="#" className="transition-colors hover:text-primary">Terms of Service</a>
+            <a href="#" className="transition-colors hover:text-primary">Institutional Access</a>
           </div>
         </div>
       </div>
