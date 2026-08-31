@@ -18,7 +18,7 @@ const NotificationBell = () => {
       {open && (
         <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
           <Badge variant="accent">2 updates</Badge>
-          <p className="mt-3 text-sm text-slate-600">New scholarship deadline and a fresh quiz recommendation are ready.</p>
+          <p className="mt-3 text-sm text-slate-600">New scholarship deadline and a fresh exam recommendation are ready.</p>
         </div>
       )}
     </div>

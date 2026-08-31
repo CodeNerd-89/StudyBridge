@@ -6,18 +6,19 @@ const items = [
   { to: '/universities', label: 'University', icon: 'school' },
   { to: '/profile', label: 'Profile', icon: 'person' },
   { to: '/scholarships', label: 'Scholarship', icon: 'payments' },
-  { to: '/quiz', label: 'Quiz', icon: 'edit_note' },
+  { to: '/exam', label: 'Exam', icon: 'edit_note' },
   { to: '/chatbot', label: 'Chatbot', icon: 'smart_toy' },
 ];
 
 const MobileBottomNav = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('token')));
   const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('token')));
 
   useEffect(() => {
     const syncAuth = () => setIsLoggedIn(Boolean(localStorage.getItem('token')));
     window.addEventListener('storage', syncAuth);
     window.addEventListener('authchange', syncAuth);
+    syncAuth();
     return () => {
       window.removeEventListener('storage', syncAuth);
       window.removeEventListener('authchange', syncAuth);
@@ -30,10 +31,12 @@ const MobileBottomNav = () => {
     return false;
   };
 
+  const visibleItems = items.filter((item) => isLoggedIn || item.to !== '/profile');
+
   return (
     <nav className="fixed inset-x-6 bottom-6 z-50 md:hidden" aria-label="Primary">
       <div className="flex h-16 items-center justify-around rounded-2xl border border-outline/70 bg-white/85 px-2 shadow-2xl backdrop-blur-xl">
-        {items.filter((item) => isLoggedIn || item.to !== '/profile').map((item) => {
+        {visibleItems.map((item) => {
           const active = isActive(item.to);
           return (
             <Link

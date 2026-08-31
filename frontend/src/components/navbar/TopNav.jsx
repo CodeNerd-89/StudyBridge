@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
-import { beginLogout } from '../../App';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face';
 import Button from '../ui/Button';
 import ScrollPlaneProgress from '../common/ScrollPlaneProgress';
+import { beginLogout } from '../../App';
 
 const items = [
   { to: '/', label: 'Home' },
   { to: '/universities', label: 'University' },
   { to: '/profile', label: 'Profile' },
   { to: '/scholarships', label: 'Scholarship' },
-  { to: '/quiz', label: 'Quiz' },
+  { to: '/exam', label: 'Exam' },
   { to: '/chatbot', label: 'Chatbot' },
 ];
 
