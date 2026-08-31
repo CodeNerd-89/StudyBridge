@@ -25,6 +25,7 @@ model Student {
   ieltsScore          Float?
   greScore            Int?
   profileImage        String?              @db.VarChar(255)
+  role                String               @default("student") @db.VarChar(20)
   createdAt           DateTime             @default(now())
   followedUniversities FollowedUniversity[]
   notifications       Notification[]

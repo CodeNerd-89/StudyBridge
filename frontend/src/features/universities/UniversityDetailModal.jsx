@@ -20,6 +20,7 @@ import {
   UserPlus,
   UserCheck,
   Loader2,
+  Edit3,
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -29,13 +30,41 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-const UniversityDetailModal = ({ university, isFollowing: propIsFollowing, onClose, onScholarshipClick, onFollowToggle }) => {
+const UniversityDetailModal = ({
+  university,
+  isFollowing: propIsFollowing,
+  onClose,
+  onScholarshipClick,
+  onFollowToggle,
+  onEditClick,
+}) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('courses'); // 'courses' | 'budget' | 'eligibility' | 'scholarships'
   const [courseSearch, setCourseSearch] = useState('');
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [isFollowing, setIsFollowing] = useState(Boolean(propIsFollowing));
   const [followLoading, setFollowLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      return u.role === 'admin' || u.email === 'admin@studybridge.com';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const syncAdmin = () => {
+      try {
+        const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        setIsAdmin(u.role === 'admin' || u.email === 'admin@studybridge.com');
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    window.addEventListener('authchange', syncAdmin);
+    return () => window.removeEventListener('authchange', syncAdmin);
+  }, []);
 
   useEffect(() => {
     if (propIsFollowing !== undefined) {
@@ -192,6 +221,23 @@ const UniversityDetailModal = ({ university, isFollowing: propIsFollowing, onClo
               )}
               <span>{followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow'}</span>
             </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose?.();
+                  if (onEditClick) {
+                    onEditClick(university);
+                  } else {
+                    navigate('/admin');
+                  }
+                }}
+                className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-3 py-1 text-xs font-bold text-teal-300 border border-teal-400/40 hover:bg-accent hover:text-white transition shadow-xs"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Edit (Admin)</span>
+              </button>
+            )}
           </div>
 
           <h2 className="mt-3.5 text-2xl font-black tracking-tight text-white md:text-3xl pr-8 leading-snug">
@@ -604,6 +650,24 @@ const UniversityDetailModal = ({ university, isFollowing: propIsFollowing, onClo
               )}
               <span>{followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow University'}</span>
             </button>
+
+            {isAdmin && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onClose?.();
+                  if (onEditClick) {
+                    onEditClick(university);
+                  } else {
+                    navigate('/admin');
+                  }
+                }}
+                className="text-xs py-2 px-3.5 inline-flex items-center gap-1 border-accent/50 text-accent hover:bg-accent hover:text-white font-bold"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                Edit Details
+              </Button>
+            )}
 
             <Button variant="outline" onClick={onClose} className="text-xs py-2 px-4">
               Close

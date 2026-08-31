@@ -8,7 +8,9 @@ import ScholarshipPage from './pages/scholarships/ScholarshipPage';
 import { LoginPage, ProfilePage } from './features/auth';
 import { ChatbotPage } from './features/ai';
 
-const NAV_ORDER = ['/', '/universities', '/profile', '/scholarships', '/quiz', '/chatbot'];
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+const NAV_ORDER = ['/', '/universities', '/profile', '/scholarships', '/quiz', '/chatbot', '/admin'];
 
 const getNavIndex = (pathname) => {
   const index = NAV_ORDER.findIndex((path) => {
@@ -41,6 +43,30 @@ const RequireAuth = ({ children }) => {
 
   if (!isLoggedIn && !isLoggingOut) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+};
+
+// Admin route guard: redirects to login or home if not an admin
+const RequireAdmin = ({ children }) => {
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
+  let role = 'student';
+  try {
+    const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    role = u.role || 'student';
+  } catch {
+    role = 'student';
+  }
+
+  const location = useLocation();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -119,6 +145,7 @@ const ViewTransitionRoutes = () => {
         <Route path="scholarships" element={<ScholarshipPage />} />
         <Route path="quiz" element={<EmptyPage title="Quiz" />} />
         <Route path="chatbot" element={<RequireAuth><ChatbotPage /></RequireAuth>} />
+        <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

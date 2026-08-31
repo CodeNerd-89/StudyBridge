@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Bell } from 'lucide-react';
+import { LogOut, Bell, ShieldAlert } from 'lucide-react';
 import { beginLogout } from '../../App';
 import api from '../../services/api';
 import NotificationDropdown from './NotificationDropdown';
@@ -19,8 +19,18 @@ const items = [
   { to: '/chatbot', label: 'Chatbot' },
 ];
 
+const getStoredRole = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    return user.role || 'student';
+  } catch {
+    return 'student';
+  }
+};
+
 const TopNav = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(Boolean(localStorage.getItem('token')));
+  const [userRole, setUserRole] = useState(getStoredRole());
   const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || DEFAULT_AVATAR);
   const [scrolled, setScrolled] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -99,6 +109,7 @@ const TopNav = () => {
     const syncAuth = () => {
       const logged = Boolean(localStorage.getItem('token'));
       setIsLoggedIn(logged);
+      setUserRole(getStoredRole());
       if (logged) {
         loadNotifications();
       } else {
@@ -162,7 +173,7 @@ const TopNav = () => {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden flex-1 items-center justify-center gap-10 md:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-8 md:flex">
           {items.filter((item) => isLoggedIn || item.to !== '/profile').map((item) => {
             const active = isActive(item.to);
             return (
@@ -179,6 +190,20 @@ const TopNav = () => {
               </Link>
             );
           })}
+
+          {userRole === 'admin' && (
+            <Link
+              to="/admin"
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition ${
+                isActive('/admin')
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
+              }`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5 text-accent" />
+              <span>Admin</span>
+            </Link>
+          )}
         </nav>
 
         {/* Right */}

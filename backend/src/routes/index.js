@@ -9,6 +9,7 @@ import chatbotRoutes from '../modules/chatbot/chatbot.routes.js';
 import statsRoutes from '../modules/stats/stats.routes.js';
 import notificationsRoutes from '../modules/notifications/notifications.routes.js';
 import usersRoutes from '../modules/users/users.routes.js';
+import adminRoutes from '../modules/admin/admin.routes.js';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/chat', chatbotRoutes);
 router.use('/stats', statsRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/users', usersRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;

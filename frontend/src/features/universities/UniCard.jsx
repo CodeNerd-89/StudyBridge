@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import { BookOpen, Check, Bookmark, Sparkles, ArrowRight, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { BookOpen, Check, Bookmark, Sparkles, ArrowRight, UserPlus, UserCheck, Loader2, Edit3 } from 'lucide-react';
 import { isBookmarked, toggleBookmark } from '../../services/bookmarks';
 import api from '../../services/api';
 
@@ -26,12 +26,34 @@ const UniCard = (props) => {
     onSelect,
     onScholarshipClick,
     onFollowToggle,
+    onEditClick,
   } = props;
 
   const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(() => (university?.id ? isBookmarked(university.id) : false));
   const [isFollowing, setIsFollowing] = useState(Boolean(propIsFollowing));
   const [followLoading, setFollowLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      return u.role === 'admin' || u.email === 'admin@studybridge.com';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const syncAdmin = () => {
+      try {
+        const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        setIsAdmin(u.role === 'admin' || u.email === 'admin@studybridge.com');
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    window.addEventListener('authchange', syncAdmin);
+    return () => window.removeEventListener('authchange', syncAdmin);
+  }, []);
 
   useEffect(() => {
     const uniId = university?.id;
@@ -270,14 +292,30 @@ const UniCard = (props) => {
           Scholarships
         </Button>
 
-        <Button
-          variant="primary"
-          onClick={() => onSelect?.(uni)}
-          className="text-xs py-2 px-4 inline-flex items-center gap-1.5"
-        >
-          View Full Details
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditClick?.(uni);
+              }}
+              className="text-xs py-2 px-3 inline-flex items-center gap-1 border-primary/30 text-primary hover:bg-primary hover:text-white font-bold transition shadow-xs"
+            >
+              <Edit3 className="h-3.5 w-3.5 text-accent" />
+              <span>Edit & Notify</span>
+            </Button>
+          )}
+
+          <Button
+            variant="primary"
+            onClick={() => onSelect?.(uni)}
+            className="text-xs py-2 px-4 inline-flex items-center gap-1.5"
+          >
+            View Full Details
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </Card>
   );
