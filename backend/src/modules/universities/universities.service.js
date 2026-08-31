@@ -415,6 +415,34 @@ export const syncUniversity = async (id) => {
       },
     });
 
+    // Notify followers about synchronization / update
+    try {
+      const followers = await prisma.followedUniversity.findMany({
+        where: { universityId: id },
+        select: { userId: true },
+      });
+
+      if (followers.length > 0) {
+        await prisma.notification.createMany({
+          data: followers.map((f) => ({
+            userId: f.userId,
+            universityId: id,
+            title: `Admissions Sync — ${university.name}`,
+            message: `${university.name} has synchronized its live admission requirements and deadlines.`,
+            type: 'GENERAL_UNIVERSITY_UPDATE',
+            isRead: false,
+            metadata: {
+              universityName: university.name,
+              country: university.country,
+              actionUrl: `/universities?search=${encodeURIComponent(university.name)}`,
+            },
+          })),
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to notify followers on sync:', notifErr);
+    }
+
     return {
       status: 200,
       body: {
@@ -453,5 +481,215 @@ export const syncAllUniversities = async () => {
   } catch (error) {
     console.error('Sync all universities error:', error);
     return { status: 500, body: { success: false, message: 'Failed to sync universities.' } };
+  }
+};
+
+/**
+ * Follow a university for the authenticated user.
+ */
+export const followUniversity = async (userId, universityId) => {
+  if (!userId) {
+    return { status: 401, body: { success: false, message: 'Unauthorized. Please log in to follow universities.' } };
+  }
+  if (!universityId) {
+    return { status: 400, body: { success: false, message: 'University ID is required.' } };
+  }
+
+  try {
+    const university = await prisma.university.findUnique({
+      where: { id: universityId },
+    });
+
+    if (!university) {
+      return { status: 404, body: { success: false, message: 'University not found.' } };
+    }
+
+    const existingFollow = await prisma.followedUniversity.findUnique({
+      where: {
+        userId_universityId: {
+          userId,
+          universityId,
+        },
+      },
+    });
+
+    if (existingFollow) {
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: `You are already following ${university.name}.`,
+          isFollowing: true,
+          university: { id: university.id, name: university.name },
+        },
+      };
+    }
+
+    await prisma.followedUniversity.create({
+      data: {
+        userId,
+        universityId,
+      },
+    });
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        message: `You are now following ${university.name}. You will receive admission updates.`,
+        isFollowing: true,
+        university: { id: university.id, name: university.name },
+      },
+    };
+  } catch (error) {
+    console.error('followUniversity error:', error);
+    return { status: 500, body: { success: false, message: 'Failed to follow university.' } };
+  }
+};
+
+/**
+ * Unfollow a university for the authenticated user.
+ */
+export const unfollowUniversity = async (userId, universityId) => {
+  if (!userId) {
+    return { status: 401, body: { success: false, message: 'Unauthorized.' } };
+  }
+  if (!universityId) {
+    return { status: 400, body: { success: false, message: 'University ID is required.' } };
+  }
+
+  try {
+    const existingFollow = await prisma.followedUniversity.findUnique({
+      where: {
+        userId_universityId: {
+          userId,
+          universityId,
+        },
+      },
+    });
+
+    if (!existingFollow) {
+      return {
+        status: 200,
+        body: {
+          success: true,
+          message: 'University is not currently followed.',
+          isFollowing: false,
+        },
+      };
+    }
+
+    await prisma.followedUniversity.delete({
+      where: { id: existingFollow.id },
+    });
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        message: 'Successfully unfollowed university.',
+        isFollowing: false,
+      },
+    };
+  } catch (error) {
+    console.error('unfollowUniversity error:', error);
+    return { status: 500, body: { success: false, message: 'Failed to unfollow university.' } };
+  }
+};
+
+/**
+ * Check if the user follows a specific university.
+ */
+export const checkFollowStatus = async (userId, universityId) => {
+  if (!userId) {
+    return { status: 200, body: { success: true, isFollowing: false } };
+  }
+  if (!universityId) {
+    return { status: 400, body: { success: false, message: 'University ID is required.' } };
+  }
+
+  try {
+    const follow = await prisma.followedUniversity.findUnique({
+      where: {
+        userId_universityId: {
+          userId,
+          universityId,
+        },
+      },
+    });
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        isFollowing: Boolean(follow),
+      },
+    };
+  } catch (error) {
+    console.error('checkFollowStatus error:', error);
+    return { status: 500, body: { success: false, message: 'Failed to check follow status.' } };
+  }
+};
+
+/**
+ * Get all universities followed by the authenticated user.
+ */
+export const getFollowedUniversities = async (userId) => {
+  if (!userId) {
+    return { status: 401, body: { success: false, message: 'Unauthorized.' } };
+  }
+
+  try {
+    const follows = await prisma.followedUniversity.findMany({
+      where: { userId },
+      include: {
+        university: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const universities = follows.map((f) => ({
+      ...f.university,
+      followedAt: f.createdAt,
+    }));
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        count: universities.length,
+        data: universities,
+      },
+    };
+  } catch (error) {
+    console.error('getFollowedUniversities error:', error);
+    return { status: 500, body: { success: false, message: 'Failed to load followed universities.' } };
+  }
+};
+
+/**
+ * Get list of followed university IDs for quick client lookup.
+ */
+export const getFollowedUniversityIds = async (userId) => {
+  if (!userId) {
+    return { status: 200, body: { success: true, followedIds: [] } };
+  }
+
+  try {
+    const follows = await prisma.followedUniversity.findMany({
+      where: { userId },
+      select: { universityId: true },
+    });
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        followedIds: follows.map((f) => f.universityId),
+      },
+    };
+  } catch (error) {
+    console.error('getFollowedUniversityIds error:', error);
+    return { status: 500, body: { success: false, message: 'Failed to load followed university IDs.' } };
   }
 };

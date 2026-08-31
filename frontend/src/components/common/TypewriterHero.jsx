@@ -14,7 +14,11 @@ const TypewriterHero = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
-  const [counts, setCounts] = useState({ universities: null, scholarships: null, students: null });
+  const [counts, setCounts] = useState({
+    universities: initialUniversities.length || 50,
+    scholarships: initialScholarships.length || 10,
+    students: 10,
+  });
 
   // Search state
   const [query, setQuery] = useState('');
@@ -29,11 +33,13 @@ const TypewriterHero = () => {
     api.get('/stats')
       .then((res) => {
         const d = res.data?.data;
-        setCounts({
-          universities: d?.universityCount ?? null,
-          scholarships: d?.scholarshipCount ?? null,
-          students: d?.studentCount ?? null,
-        });
+        if (d) {
+          setCounts({
+            universities: d.universityCount ?? initialUniversities.length,
+            scholarships: d.scholarshipCount ?? initialScholarships.length,
+            students: d.studentCount ?? 10,
+          });
+        }
       })
       .catch(() => {});
   }, []);

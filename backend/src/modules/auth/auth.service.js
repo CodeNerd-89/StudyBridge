@@ -11,7 +11,7 @@ const googleClient = new OAuth2Client(
 
 const signToken = (student) =>
   jwt.sign(
-    { id: student.id, email: student.email, name: student.name },
+    { id: student.id, email: student.email, name: student.name, role: student.role || 'student' },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -113,6 +113,11 @@ export const me = async (userId) => {
     const student = await prisma.student.findUnique({ where: { id: userId } });
     if (!student) {
       return { status: 404, body: { message: 'User not found.' } };
+    }
+
+    if (student.email === 'admin@studybridge.com' && student.role !== 'admin') {
+      student.role = 'admin';
+      await prisma.student.update({ where: { id: student.id }, data: { role: 'admin' } });
     }
 
     return { status: 200, body: { success: true, user: publicUser(student) } };
@@ -280,6 +285,11 @@ export const login = async (payload = {}) => {
       return { status: 401, body: { message: 'Invalid email or password.' } };
     }
 
+    if (student.email === 'admin@studybridge.com' && student.role !== 'admin') {
+      student.role = 'admin';
+      await prisma.student.update({ where: { id: student.id }, data: { role: 'admin' } });
+    }
+
     const token = signToken(student);
 
     return {
@@ -289,5 +299,48 @@ export const login = async (payload = {}) => {
   } catch (err) {
     console.error('Login error:', err);
     return { status: 500, body: { message: 'Something went wrong while signing you in.' } };
+  }
+};
+
+/**
+ * Initialize or promote the default administrator user in the database.
+ */
+export const ensureAdminUser = async () => {
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@studybridge.com').toLowerCase().trim();
+  const adminPassword = process.env.ADMIN_PASSWORD || 'AdminPassword@123';
+
+  try {
+    const existing = await prisma.student.findUnique({
+      where: { email: adminEmail },
+    });
+
+    if (!existing) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      const created = await prisma.student.create({
+        data: {
+          name: 'StudyBridge Administrator',
+          email: adminEmail,
+          password: hashedPassword,
+          country: 'Global',
+          role: 'admin',
+        },
+      });
+      console.log(`[Admin] Initialized default admin account: ${created.email}`);
+      return created;
+    }
+
+    if (existing.role !== 'admin') {
+      const updated = await prisma.student.update({
+        where: { email: adminEmail },
+        data: { role: 'admin' },
+      });
+      console.log(`[Admin] Promoted ${updated.email} to admin.`);
+      return updated;
+    }
+
+    return existing;
+  } catch (error) {
+    console.warn('[Admin] Could not initialize admin account:', error?.message);
+    return null;
   }
 };

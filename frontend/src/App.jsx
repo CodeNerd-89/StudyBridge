@@ -9,7 +9,9 @@ import QuizPage from './pages/tests/QuizPage';
 import { LoginPage, ProfilePage } from './features/auth';
 import { ChatbotPage } from './features/ai';
 
-const NAV_ORDER = ['/', '/universities', '/profile', '/scholarships', '/exam', '/chatbot'];
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+const NAV_ORDER = ['/', '/universities', '/profile', '/scholarships', '/quiz', '/chatbot', '/admin'];
 
 const getNavIndex = (pathname) => {
   const normalized = pathname.startsWith('/quiz') ? '/exam' : pathname;
@@ -45,6 +47,40 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
+// Admin route guard: redirects to login or home if not an admin
+const RequireAdmin = ({ children }) => {
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
+  let role = 'student';
+  try {
+    const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    role = u.role || 'student';
+  } catch {
+    role = 'student';
+  }
+
+  const location = useLocation();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const EmptyPage = ({ title }) => {
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand">StudyBridge</p>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-primary">{title}</h1>
+      <p className="mt-4 max-w-2xl text-slate-600">This section is intentionally empty for now.</p>
+    </section>
+  );
+};
+
 const ViewTransitionRoutes = () => {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
@@ -59,6 +95,14 @@ const ViewTransitionRoutes = () => {
 
     const prevPath = prevPathRef.current;
     const nextPath = location.pathname;
+
+    // Skip slide transitions for /login for instant, stable rendering
+    if (prevPath === '/login' || nextPath === '/login' || nextPath.startsWith('/login')) {
+      prevPathRef.current = nextPath;
+      setDisplayLocation(location);
+      return;
+    }
+
     const prevIdx = getNavIndex(prevPath);
     const nextIdx = getNavIndex(nextPath);
     const direction = nextIdx >= prevIdx ? 'slide-forward' : 'slide-backward';
@@ -87,6 +131,7 @@ const ViewTransitionRoutes = () => {
   return (
     <Routes location={displayLocation}>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/*" element={<LoginPage />} />
       <Route element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
@@ -95,6 +140,7 @@ const ViewTransitionRoutes = () => {
         <Route path="exam" element={<RequireAuth><QuizPage /></RequireAuth>} />
         <Route path="quiz" element={<Navigate to="/exam" replace />} />
         <Route path="chatbot" element={<RequireAuth><ChatbotPage /></RequireAuth>} />
+        <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

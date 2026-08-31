@@ -10,41 +10,46 @@ datasource db {
 
 
 model Student {
-  id               String          @id @default(cuid())
-  name             String          @db.VarChar(100)
-  email            String          @unique @db.VarChar(255)
-  password         String?         @db.VarChar(255)
-  googleId         String?         @unique
-  phone            String?         @db.VarChar(20)
-  country          String          @db.VarChar(100)
-  institution      String?         @db.VarChar(150)
-  subject          String?         @db.VarChar(100)
-  cgpa             Float?
-  preferredSubject String?         @db.VarChar(100)
-  satScore         Int?
-  ieltsScore       Float?
-  greScore         Int?
-  profileImage     String?         @db.VarChar(255)
-  createdAt        DateTime        @default(now())
+  id                  String               @id @default(cuid())
+  name                String               @db.VarChar(100)
+  email               String               @unique @db.VarChar(255)
+  password            String?              @db.VarChar(255)
+  googleId            String?              @unique
+  phone               String?              @db.VarChar(20)
+  country             String               @db.VarChar(100)
+  institution         String?              @db.VarChar(150)
+  subject             String?              @db.VarChar(100)
+  cgpa                Float?
+  preferredSubject    String?              @db.VarChar(100)
+  satScore            Int?
+  ieltsScore          Float?
+  greScore            Int?
+  profileImage        String?              @db.VarChar(255)
+  role                String               @default("student") @db.VarChar(20)
+  createdAt           DateTime             @default(now())
+  followedUniversities FollowedUniversity[]
+  notifications       Notification[]
 }
 
 model University {
-  id                  String    @id @default(cuid())
-  name                String    @unique @db.VarChar(150)
-  country             String    @db.VarChar(100)
-  city                String?   @db.VarChar(100)
+  id                  String               @id @default(cuid())
+  name                String               @unique @db.VarChar(150)
+  country             String               @db.VarChar(100)
+  city                String?              @db.VarChar(100)
   ranking             Int
   tuitionAnnualUsd    Int?
   acceptanceRate      Float?
   applicationFee      Int?
-  applicationDeadline String?   @db.VarChar(100)
+  applicationDeadline String?              @db.VarChar(100)
   ieltsRequirement    Float?
   greRequirement      Int?
-  websiteUrl          String?   @db.VarChar(255)
+  websiteUrl          String?              @db.VarChar(255)
   courses             Json?
   lastScraped         DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  followers           FollowedUniversity[]
+  notifications       Notification[]
 }
 
 model Scholarship {
@@ -59,4 +64,36 @@ model Scholarship {
   lastScraped  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+model FollowedUniversity {
+  id           String     @id @default(cuid())
+  userId       String
+  universityId String
+  createdAt    DateTime   @default(now())
+  student      Student    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, universityId])
+  @@index([userId])
+  @@index([universityId])
+}
+
+model Notification {
+  id           String      @id @default(cuid())
+  userId       String
+  universityId String?
+  title        String      @db.VarChar(200)
+  message      String      @db.Text
+  type         String      @db.VarChar(50)
+  isRead       Boolean     @default(false)
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  student      Student     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([universityId])
 }
