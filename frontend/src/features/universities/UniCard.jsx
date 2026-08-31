@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import { BookOpen, Check, Bookmark, Sparkles, ArrowRight } from 'lucide-react';
+import { BookOpen, Check, Bookmark, Sparkles, ArrowRight, UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { isBookmarked, toggleBookmark } from '../../services/bookmarks';
+import api from '../../services/api';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -20,11 +22,16 @@ const UniCard = (props) => {
     ranking: propRanking,
     tuition: propTuition,
     match: propMatch = 85,
+    isFollowing: propIsFollowing,
     onSelect,
     onScholarshipClick,
+    onFollowToggle,
   } = props;
 
-  const [isSaved, setIsSaved] = useState(() => university?.id ? isBookmarked(university.id) : false);
+  const navigate = useNavigate();
+  const [isSaved, setIsSaved] = useState(() => (university?.id ? isBookmarked(university.id) : false));
+  const [isFollowing, setIsFollowing] = useState(Boolean(propIsFollowing));
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     const uniId = university?.id;
@@ -33,6 +40,12 @@ const UniCard = (props) => {
     window.addEventListener('bookmarkschange', check);
     return () => window.removeEventListener('bookmarkschange', check);
   }, [university?.id]);
+
+  useEffect(() => {
+    if (propIsFollowing !== undefined) {
+      setIsFollowing(Boolean(propIsFollowing));
+    }
+  }, [propIsFollowing]);
 
   // Normalize data whether passed as an object or individual props
   const uni = university || {
@@ -69,6 +82,44 @@ const UniCard = (props) => {
     toggleBookmark(uni);
   };
 
+  const handleToggleFollow = async (e) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login', { state: { from: '/universities' } });
+      return;
+    }
+
+    if (!id) return;
+
+    const previousState = isFollowing;
+    const nextState = !previousState;
+    setIsFollowing(nextState);
+    setFollowLoading(true);
+
+    try {
+      if (nextState) {
+        await api.post(`/universities/${id}/follow`);
+      } else {
+        await api.delete(`/universities/${id}/follow`);
+      }
+
+      onFollowToggle?.(id, nextState);
+      window.dispatchEvent(
+        new CustomEvent('followchange', {
+          detail: { universityId: id, isFollowing: nextState },
+        })
+      );
+      window.dispatchEvent(new Event('notificationchange'));
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+      // Rollback on error
+      setIsFollowing(previousState);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const rawCourses = detailedCourses.length > 0 
     ? detailedCourses.map(c => c.name || c.discipline) 
     : (Array.isArray(courses) ? courses : []);
@@ -98,6 +149,27 @@ const UniCard = (props) => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleFollow}
+              disabled={followLoading}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-2xs ${
+                isFollowing
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                  : 'bg-slate-50 text-slate-700 border border-slate-200 hover:border-accent hover:bg-accent/5 hover:text-accent'
+              }`}
+              title={isFollowing ? 'Click to unfollow' : 'Follow for admission & deadline updates'}
+            >
+              {followLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isFollowing ? (
+                <UserCheck className="h-3.5 w-3.5" />
+              ) : (
+                <UserPlus className="h-3.5 w-3.5" />
+              )}
+              <span>{followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow'}</span>
+            </button>
+
             <div className="rounded-2xl bg-accent/10 px-3 py-1.5 text-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-accent block">
                 Match

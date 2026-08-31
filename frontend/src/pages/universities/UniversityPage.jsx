@@ -87,6 +87,54 @@ const UniversityPage = () => {
     }
   }, [location.state, universities]);
 
+  // Followed universities state
+  const [followedUniIds, setFollowedUniIds] = useState(new Set());
+  const [onlyFollowed, setOnlyFollowed] = useState(false);
+
+  // Load followed universities IDs from backend
+  const loadFollowedIds = useCallback(async () => {
+    if (!localStorage.getItem('token')) {
+      setFollowedUniIds(new Set());
+      return;
+    }
+
+    try {
+      const res = await api.get('/universities/followed/ids');
+      if (res.data?.success && Array.isArray(res.data.followedIds)) {
+        setFollowedUniIds(new Set(res.data.followedIds));
+      }
+    } catch (err) {
+      console.warn('Could not load followed universities IDs:', err?.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFollowedIds();
+
+    const handleFollowChange = (e) => {
+      const { universityId, isFollowing } = e.detail || {};
+      if (universityId) {
+        setFollowedUniIds((prev) => {
+          const next = new Set(prev);
+          if (isFollowing) {
+            next.add(universityId);
+          } else {
+            next.delete(universityId);
+          }
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener('followchange', handleFollowChange);
+    window.addEventListener('authchange', loadFollowedIds);
+
+    return () => {
+      window.removeEventListener('followchange', handleFollowChange);
+      window.removeEventListener('authchange', loadFollowedIds);
+    };
+  }, [loadFollowedIds]);
+
   // Load available subjects from backend in background
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -136,6 +184,10 @@ const UniversityPage = () => {
   // Client-side filtering
   const displayedUniversities = useMemo(() => {
     let list = universities.filter((u) => {
+      if (onlyFollowed && u.id && !followedUniIds.has(u.id)) {
+        return false;
+      }
+
       const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
         !query ||
@@ -178,7 +230,7 @@ const UniversityPage = () => {
     }
 
     return list;
-  }, [universities, searchQuery, appliedCountry, appliedSubject, appliedBudget, appliedIelts, appliedSort]);
+  }, [universities, searchQuery, appliedCountry, appliedSubject, appliedBudget, appliedIelts, appliedSort, onlyFollowed, followedUniIds]);
 
   // Extract unique countries
   const countries = useMemo(() => {
@@ -289,10 +341,30 @@ const UniversityPage = () => {
       />
 
       {/* Results Header Strip */}
-      <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-semibold text-slate-500">
-          Showing <strong className="text-slate-900 font-bold">{displayedUniversities.length}</strong> universities matching criteria
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-semibold text-slate-500">
+            Showing <strong className="text-slate-900 font-bold">{displayedUniversities.length}</strong> universities matching criteria
+          </p>
+
+          {followedUniIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setOnlyFollowed(!onlyFollowed)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition ${
+                onlyFollowed
+                  ? 'bg-accent text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <span>{onlyFollowed ? '✓ Showing Followed' : 'Show Followed'}</span>
+              <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${onlyFollowed ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                {followedUniIds.size}
+              </span>
+            </button>
+          )}
+        </div>
+
         {hasActiveFilters && (
           <button
             type="button"
@@ -309,10 +381,12 @@ const UniversityPage = () => {
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500 shadow-sm space-y-4">
           <p className="text-base font-semibold text-slate-700">No universities match your selected criteria.</p>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Try adjusting your budget filter, changing the major/country, or clicking Reset Filters.
+            {onlyFollowed
+              ? "You haven't followed any universities yet. Browse and follow universities to receive updates!"
+              : 'Try adjusting your budget filter, changing the major/country, or clicking Reset Filters.'}
           </p>
           <Button variant="outline" onClick={handleResetFilters}>
-            Reset All Filters
+            {onlyFollowed ? 'Show All Universities' : 'Reset All Filters'}
           </Button>
         </div>
       ) : (
@@ -321,6 +395,7 @@ const UniversityPage = () => {
             <UniCard
               key={university.id || university.name}
               university={university}
+              isFollowing={Boolean(university.id && followedUniIds.has(university.id))}
               match={estimateMatch(university.ranking, university.acceptanceRate)}
               onSelect={handleOpenDetails}
               onScholarshipClick={(uni) => {
@@ -335,6 +410,7 @@ const UniversityPage = () => {
       {activeModalUni && (
         <UniversityDetailModal
           university={activeModalUni}
+          isFollowing={Boolean(activeModalUni.id && followedUniIds.has(activeModalUni.id))}
           onClose={() => setActiveModalUni(null)}
           onScholarshipClick={(scholarship) => {
             navigate(`/scholarships?search=${encodeURIComponent(scholarship.name || scholarship.country)}`);

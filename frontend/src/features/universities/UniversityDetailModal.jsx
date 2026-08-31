@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import {
@@ -16,7 +17,11 @@ import {
   Sparkles,
   ShieldCheck,
   TrendingUp,
+  UserPlus,
+  UserCheck,
+  Loader2,
 } from 'lucide-react';
+import api from '../../services/api';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -24,10 +29,57 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-const UniversityDetailModal = ({ university, onClose, onScholarshipClick }) => {
+const UniversityDetailModal = ({ university, isFollowing: propIsFollowing, onClose, onScholarshipClick, onFollowToggle }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('courses'); // 'courses' | 'budget' | 'eligibility' | 'scholarships'
   const [courseSearch, setCourseSearch] = useState('');
   const [expandedCourseId, setExpandedCourseId] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(Boolean(propIsFollowing));
+  const [followLoading, setFollowLoading] = useState(false);
+
+  useEffect(() => {
+    if (propIsFollowing !== undefined) {
+      setIsFollowing(Boolean(propIsFollowing));
+    }
+  }, [propIsFollowing]);
+
+  const handleToggleFollow = async (e) => {
+    e?.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      onClose?.();
+      navigate('/login', { state: { from: '/universities' } });
+      return;
+    }
+
+    if (!university?.id) return;
+
+    const previous = isFollowing;
+    const nextState = !previous;
+    setIsFollowing(nextState);
+    setFollowLoading(true);
+
+    try {
+      if (nextState) {
+        await api.post(`/universities/${university.id}/follow`);
+      } else {
+        await api.delete(`/universities/${university.id}/follow`);
+      }
+
+      onFollowToggle?.(university.id, nextState);
+      window.dispatchEvent(
+        new CustomEvent('followchange', {
+          detail: { universityId: university.id, isFollowing: nextState },
+        })
+      );
+      window.dispatchEvent(new Event('notificationchange'));
+    } catch (err) {
+      console.error('Modal follow toggle error:', err);
+      setIsFollowing(previous);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   // Lock background scroll and listen for Escape key
   useEffect(() => {
@@ -120,6 +172,26 @@ const UniversityDetailModal = ({ university, onClose, onScholarshipClick }) => {
               <ShieldCheck className="h-3.5 w-3.5" />
               Accredited Official
             </span>
+            <button
+              type="button"
+              onClick={handleToggleFollow}
+              disabled={followLoading}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold transition shadow-xs ${
+                isFollowing
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/40'
+                  : 'bg-white text-primary hover:bg-teal-50 hover:text-accent border border-white/20'
+              }`}
+              title={isFollowing ? 'Click to unfollow' : 'Follow for admission updates'}
+            >
+              {followLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isFollowing ? (
+                <UserCheck className="h-3.5 w-3.5" />
+              ) : (
+                <UserPlus className="h-3.5 w-3.5" />
+              )}
+              <span>{followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow'}</span>
+            </button>
           </div>
 
           <h2 className="mt-3.5 text-2xl font-black tracking-tight text-white md:text-3xl pr-8 leading-snug">
@@ -512,6 +584,27 @@ const UniversityDetailModal = ({ university, onClose, onScholarshipClick }) => {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleToggleFollow}
+              disabled={followLoading}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition shadow-xs ${
+                isFollowing
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                  : 'bg-accent text-white hover:bg-accent-teal shadow-sm'
+              }`}
+              title={isFollowing ? 'Click to unfollow' : 'Follow for admission updates'}
+            >
+              {followLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isFollowing ? (
+                <UserCheck className="h-3.5 w-3.5" />
+              ) : (
+                <UserPlus className="h-3.5 w-3.5" />
+              )}
+              <span>{followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow University'}</span>
+            </button>
+
             <Button variant="outline" onClick={onClose} className="text-xs py-2 px-4">
               Close
             </Button>

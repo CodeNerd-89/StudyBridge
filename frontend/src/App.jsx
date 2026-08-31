@@ -73,6 +73,13 @@ const ViewTransitionRoutes = () => {
     const prevPath = prevPathRef.current;
     const nextPath = location.pathname;
 
+    // Skip slide transitions for /login for instant, stable rendering
+    if (prevPath === '/login' || nextPath === '/login' || nextPath.startsWith('/login')) {
+      prevPathRef.current = nextPath;
+      setDisplayLocation(location);
+      return;
+    }
+
     const prevIdx = getNavIndex(prevPath);
     const nextIdx = getNavIndex(nextPath);
 
@@ -104,6 +111,7 @@ const ViewTransitionRoutes = () => {
   return (
     <Routes location={displayLocation}>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/*" element={<LoginPage />} />
       <Route element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />

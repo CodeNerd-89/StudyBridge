@@ -7,6 +7,8 @@ import testsRoutes from '../modules/tests/tests.routes.js';
 import aiRoutes from '../modules/ai/ai.routes.js';
 import chatbotRoutes from '../modules/chatbot/chatbot.routes.js';
 import statsRoutes from '../modules/stats/stats.routes.js';
+import notificationsRoutes from '../modules/notifications/notifications.routes.js';
+import usersRoutes from '../modules/users/users.routes.js';
 
 const router = Router();
 
@@ -17,5 +19,7 @@ router.use('/quiz', testsRoutes);
 router.use('/chatbot', aiRoutes);
 router.use('/chat', chatbotRoutes);
 router.use('/stats', statsRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/users', usersRoutes);
 
 export default router;

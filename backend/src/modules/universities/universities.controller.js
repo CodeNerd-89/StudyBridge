@@ -24,3 +24,28 @@ export const syncAllUniversities = async (req, res) => {
   const result = await universitiesService.syncAllUniversities();
   return res.status(result.status).json(result.body);
 };
+
+export const followUniversity = async (req, res) => {
+  const result = await universitiesService.followUniversity(req.user?.id, req.params.id);
+  return res.status(result.status).json(result.body);
+};
+
+export const unfollowUniversity = async (req, res) => {
+  const result = await universitiesService.unfollowUniversity(req.user?.id, req.params.id);
+  return res.status(result.status).json(result.body);
+};
+
+export const checkFollowStatus = async (req, res) => {
+  const result = await universitiesService.checkFollowStatus(req.user?.id, req.params.id);
+  return res.status(result.status).json(result.body);
+};
+
+export const getFollowedUniversities = async (req, res) => {
+  const result = await universitiesService.getFollowedUniversities(req.user?.id);
+  return res.status(result.status).json(result.body);
+};
+
+export const getFollowedUniversityIds = async (req, res) => {
+  const result = await universitiesService.getFollowedUniversityIds(req.user?.id);
+  return res.status(result.status).json(result.body);
+};
