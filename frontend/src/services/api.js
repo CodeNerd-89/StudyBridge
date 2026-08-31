@@ -7,13 +7,18 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
+
+export const quizApi = {
+  generate: async (payload) => (await api.post('/quiz/generate', payload)).data,
+  getOne: async (quizId) => (await api.get(`/quiz/${encodeURIComponent(quizId)}`)).data,
+  submit: async (quizId, payload) => (await api.post(`/quiz/${encodeURIComponent(quizId)}/submit`, payload)).data,
+  performance: async (params = {}) => (await api.get('/quiz/performance', { params })).data,
+};
 
 export default api;

@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import UniversityPage from './pages/universities/UniversityPage';
 import ScholarshipPage from './pages/scholarships/ScholarshipPage';
+import QuizPage from './pages/tests/QuizPage';
 import { LoginPage, ProfilePage } from './features/auth';
 import { ChatbotPage } from './features/ai';
 
@@ -13,14 +14,14 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 const NAV_ORDER = ['/', '/universities', '/profile', '/scholarships', '/quiz', '/chatbot', '/admin'];
 
 const getNavIndex = (pathname) => {
+  const normalized = pathname.startsWith('/quiz') ? '/exam' : pathname;
   const index = NAV_ORDER.findIndex((path) => {
-    if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
+    if (path === '/') return normalized === '/';
+    return normalized.startsWith(path);
   });
   return index !== -1 ? index : 999;
 };
 
-// Scrolls to the top whenever the route changes (React Router preserves scroll by default)
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -31,12 +32,10 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Flag to prevent RequireAuth from redirecting to /login during logout
 let isLoggingOut = false;
 export const beginLogout = () => { isLoggingOut = true; };
 export const endLogout = () => { isLoggingOut = false; };
 
-// Route guard: redirects to login when there's no auth token
 const RequireAuth = ({ children }) => {
   const isLoggedIn = Boolean(localStorage.getItem('token'));
   const location = useLocation();
@@ -92,9 +91,7 @@ const ViewTransitionRoutes = () => {
       location.pathname === displayLocation.pathname &&
       location.search === displayLocation.search &&
       location.hash === displayLocation.hash
-    ) {
-      return;
-    }
+    ) return;
 
     const prevPath = prevPathRef.current;
     const nextPath = location.pathname;
@@ -108,7 +105,6 @@ const ViewTransitionRoutes = () => {
 
     const prevIdx = getNavIndex(prevPath);
     const nextIdx = getNavIndex(nextPath);
-
     const direction = nextIdx >= prevIdx ? 'slide-forward' : 'slide-backward';
     prevPathRef.current = nextPath;
 
@@ -119,13 +115,11 @@ const ViewTransitionRoutes = () => {
     ) {
       document.documentElement.classList.remove('slide-forward', 'slide-backward');
       document.documentElement.classList.add(direction);
-
       const transition = document.startViewTransition(() => {
         flushSync(() => {
           setDisplayLocation(location);
         });
       });
-
       transition.finished.finally(() => {
         document.documentElement.classList.remove('slide-forward', 'slide-backward');
       });
@@ -143,7 +137,8 @@ const ViewTransitionRoutes = () => {
         <Route path="profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
         <Route path="universities" element={<UniversityPage />} />
         <Route path="scholarships" element={<ScholarshipPage />} />
-        <Route path="quiz" element={<EmptyPage title="Quiz" />} />
+        <Route path="exam" element={<RequireAuth><QuizPage /></RequireAuth>} />
+        <Route path="quiz" element={<Navigate to="/exam" replace />} />
         <Route path="chatbot" element={<RequireAuth><ChatbotPage /></RequireAuth>} />
         <Route path="admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />

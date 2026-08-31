@@ -24,7 +24,7 @@ const Timer = ({ initialSeconds = 90 }) => {
     <Card className="flex items-center justify-between gap-4 p-5">
       <div>
         <Badge variant="brand">Live timer</Badge>
-        <p className="mt-2 text-sm text-slate-500">Time left for the mock test</p>
+        <p className="mt-2 text-sm text-slate-500">Time left for the mock exam</p>
       </div>
       <p className="text-3xl font-extrabold text-primary">{formatTime(seconds)}</p>
     </Card>

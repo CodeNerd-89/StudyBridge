@@ -15,7 +15,7 @@ const items = [
   { to: '/universities', label: 'University' },
   { to: '/profile', label: 'Profile' },
   { to: '/scholarships', label: 'Scholarship' },
-  { to: '/quiz', label: 'Quiz' },
+  { to: '/exam', label: 'Exam' },
   { to: '/chatbot', label: 'Chatbot' },
 ];
 

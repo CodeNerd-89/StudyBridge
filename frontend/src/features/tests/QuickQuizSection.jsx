@@ -19,10 +19,10 @@ const QuickQuizSection = () => {
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand">Hasan</p>
-          <h2 className="mt-2 text-3xl font-bold text-primary">Quick quiz</h2>
+          <h2 className="mt-2 text-3xl font-bold text-primary">Quick exam</h2>
         </div>
-        <Button to="/quiz" variant="outline">
-          Open full quiz
+        <Button to="/exam" variant="outline">
+          Open full exam
         </Button>
       </div>
       <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
