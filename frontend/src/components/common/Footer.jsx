@@ -15,7 +15,7 @@ const team = [
   },
   {
     name: 'Tahmid Hossain',
-    role: 'Chatbot AI & Notification',
+    role: 'Chatbot AI, Notification & Admin Portal',
     avatar: 'https://api.dicebear.com/9.x/notionists/svg?seed=Tahmid&backgroundColor=ffd5dc',
     github: 'https://github.com/CodeNerd-89',
   },

@@ -47,6 +47,17 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
+// Profile guard: If an administrator accesses /profile, redirect them to /admin
+const ProfileOrAdminGuard = () => {
+  try {
+    const u = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (u.role === 'admin' || u.email === 'admin@studybridge.com') {
+      return <Navigate to="/admin" replace />;
+    }
+  } catch {}
+  return <ProfilePage />;
+};
+
 // Admin route guard: redirects to login or home if not an admin
 const RequireAdmin = ({ children }) => {
   const isLoggedIn = Boolean(localStorage.getItem('token'));
@@ -134,7 +145,7 @@ const ViewTransitionRoutes = () => {
       <Route path="/login/*" element={<LoginPage />} />
       <Route element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+        <Route path="profile" element={<RequireAuth><ProfileOrAdminGuard /></RequireAuth>} />
         <Route path="universities" element={<UniversityPage />} />
         <Route path="scholarships" element={<ScholarshipPage />} />
         <Route path="exam" element={<RequireAuth><QuizPage /></RequireAuth>} />

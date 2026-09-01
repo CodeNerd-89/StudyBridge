@@ -23,6 +23,9 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 
+const HACKER_AVATAR =
+  'https://api.dicebear.com/9.x/bottts/svg?seed=CyberHacker&backgroundColor=041d1a';
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('universities'); // 'universities' | 'announcements' | 'scholarships'
   const [stats, setStats] = useState({
@@ -246,10 +249,29 @@ const AdminDashboard = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-slate-50/90 p-2.5 pr-4 shadow-2xs">
+              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-900 shadow-xs">
+                <img
+                  src={HACKER_AVATAR}
+                  alt="Administrator Profile"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5 text-xs font-black text-primary">
+                  <span>Root Admin</span>
+                  <span className="rounded-md bg-emerald-100 px-1.5 py-0.2 text-[9px] font-black uppercase text-emerald-800">
+                    Active
+                  </span>
+                </div>
+                <div className="font-mono text-[11px] text-slate-500">admin@studybridge.com</div>
+              </div>
+            </div>
+
             <Link
               to="/universities"
-              className="rounded-full border border-slate-300 bg-white px-5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:border-primary hover:text-primary transition"
+              className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:border-primary hover:text-primary transition"
             >
               Public Catalog
             </Link>

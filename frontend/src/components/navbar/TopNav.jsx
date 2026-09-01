@@ -10,14 +10,8 @@ import ScrollPlaneProgress from '../common/ScrollPlaneProgress';
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face';
 
-const items = [
-  { to: '/', label: 'Home' },
-  { to: '/universities', label: 'University' },
-  { to: '/profile', label: 'Profile' },
-  { to: '/scholarships', label: 'Scholarship' },
-  { to: '/exam', label: 'Exam' },
-  { to: '/chatbot', label: 'Chatbot' },
-];
+const HACKER_AVATAR =
+  'https://api.dicebear.com/9.x/bottts/svg?seed=CyberHacker&backgroundColor=041d1a';
 
 const getStoredRole = () => {
   try {
@@ -158,6 +152,27 @@ const TopNav = () => {
     return false;
   };
 
+  const effectiveAvatar = userRole === 'admin' ? HACKER_AVATAR : avatar;
+
+  const navItems =
+    userRole === 'admin'
+      ? [
+          { to: '/', label: 'Home' },
+          { to: '/universities', label: 'University' },
+          { to: '/admin', label: 'Admin', isAdminPill: true },
+          { to: '/scholarships', label: 'Scholarship' },
+          { to: '/exam', label: 'Exam' },
+          { to: '/chatbot', label: 'Chatbot' },
+        ]
+      : [
+          { to: '/', label: 'Home' },
+          { to: '/universities', label: 'University' },
+          ...(isLoggedIn ? [{ to: '/profile', label: 'Profile' }] : []),
+          { to: '/scholarships', label: 'Scholarship' },
+          { to: '/exam', label: 'Exam' },
+          { to: '/chatbot', label: 'Chatbot' },
+        ];
+
   return (
     <header
       className={`glass-nav fixed inset-x-0 top-0 z-50 flex w-full items-center transition-all duration-300 ${
@@ -173,9 +188,25 @@ const TopNav = () => {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden flex-1 items-center justify-center gap-8 md:flex">
-          {items.filter((item) => isLoggedIn || item.to !== '/profile').map((item) => {
+        <nav className="hidden flex-1 items-center justify-center gap-7 md:flex">
+          {navItems.map((item) => {
             const active = isActive(item.to);
+            if (item.isAdminPill) {
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-sm font-bold transition shadow-2xs ${
+                    active
+                      ? 'bg-primary text-white ring-2 ring-primary/20 shadow-xs'
+                      : 'border border-slate-300 bg-slate-100/90 text-slate-800 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800'
+                  }`}
+                >
+                  <ShieldAlert className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Admin</span>
+                </Link>
+              );
+            }
             return (
               <Link
                 key={item.to}
@@ -190,20 +221,6 @@ const TopNav = () => {
               </Link>
             );
           })}
-
-          {userRole === 'admin' && (
-            <Link
-              to="/admin"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition ${
-                isActive('/admin')
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
-              }`}
-            >
-              <ShieldAlert className="h-3.5 w-3.5 text-accent" />
-              <span>Admin</span>
-            </Link>
-          )}
         </nav>
 
         {/* Right */}
@@ -256,7 +273,28 @@ const TopNav = () => {
                 )}
               </div>
 
-              {isActive('/profile') ? (
+              {userRole === 'admin' ? (
+                isActive('/admin') ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-red-300 bg-red-50 text-red-500 shadow-sm transition hover:bg-red-100"
+                    aria-label="Sign out"
+                    title="Sign out Admin"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <Link
+                    to="/admin"
+                    className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-outline bg-white shadow-sm transition hover:border-primary"
+                    aria-label="Admin Portal"
+                    title="Admin Portal"
+                  >
+                    <img src={effectiveAvatar} alt="Admin" className="h-full w-full object-cover" />
+                  </Link>
+                )
+              ) : isActive('/profile') ? (
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -273,7 +311,7 @@ const TopNav = () => {
                   aria-label="Open profile"
                   title="View Profile"
                 >
-                  <img src={avatar} alt="" className="h-full w-full object-cover" />
+                  <img src={effectiveAvatar} alt="" className="h-full w-full object-cover" />
                 </Link>
               )}
             </div>
