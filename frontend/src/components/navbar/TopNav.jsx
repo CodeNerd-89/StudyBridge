@@ -5,7 +5,6 @@ import { beginLogout } from '../../App';
 import api from '../../services/api';
 import NotificationDropdown from './NotificationDropdown';
 import Button from '../ui/Button';
-import ScrollPlaneProgress from '../common/ScrollPlaneProgress';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face';
@@ -319,9 +318,6 @@ const TopNav = () => {
 
         </div>
       </div>
-
-      {/* Plane scroll indicator — KEPT from original */}
-      <ScrollPlaneProgress />
     </header>
   );
 };

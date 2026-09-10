@@ -105,10 +105,10 @@ Create a `.env` file in `backend/`:
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/studybridge"
 JWT_SECRET="your-secret-key"
-PORT=5001
+PORT=5002
 ```
 
-> **Note:** The backend defaults to port **5000** if `PORT` is not set. The root `npm run dev` command explicitly sets `PORT=5001` to avoid conflicts.
+> **Note:** The backend defaults to port **5002** if `PORT` is not set. The root `npm run dev` command explicitly sets `PORT=5002` for consistency.
 
 ### Installation
 
@@ -143,12 +143,12 @@ npm run dev
 
 This starts:
 - **Frontend** → `http://localhost:5173` (Vite dev server)
-- **Backend** → `http://localhost:5001` (Express API)
+- **Backend** → `http://localhost:5002` (Express API)
 
 Or run them separately:
 
 ```bash
-# Backend only (defaults to port 5000)
+# Backend only (defaults to port 5002)
 npm run dev --prefix backend
 
 # Frontend only

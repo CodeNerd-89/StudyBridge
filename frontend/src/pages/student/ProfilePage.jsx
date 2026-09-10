@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { getBookmarks, removeBookmark } from '../../services/bookmarks';
 
@@ -12,6 +12,36 @@ const DEMO_USER = {
   gpa: '3.94',
   sat: '1540',
   ielts: '7.0',
+};
+
+const formatNotifTime = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const getNotifMeta = (type) => {
+  switch (type) {
+    case 'APPLICATION_DEADLINE':
+      return { icon: 'event', iconColor: 'text-amber-600 bg-amber-50 border-amber-200', label: 'Deadline' };
+    case 'RESULT_UPDATE':
+      return { icon: 'auto_awesome', iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200', label: 'Result' };
+    case 'REQUIREMENT_UPDATE':
+      return { icon: 'info', iconColor: 'text-blue-600 bg-blue-50 border-blue-200', label: 'Requirement' };
+    case 'ADMISSION_UPDATE':
+    case 'GENERAL_UNIVERSITY_UPDATE':
+    default:
+      return { icon: 'school', iconColor: 'text-accent bg-accent/10 border-accent/20', label: 'Admission' };
+  }
 };
 
 // Cached profile saved at login/registration, so the page isn't blank while /me loads
@@ -32,7 +62,70 @@ const ProfilePage = () => {
   const [editingScores, setEditingScores] = useState(false);
   const [scoreDraft, setScoreDraft] = useState({ cgpa: '', satScore: '', ieltsScore: '' });
   const [savingScores, setSavingScores] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
+
+  const loadNotifications = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+    try {
+      setNotifLoading(true);
+      const res = await api.get('/notifications?limit=20');
+      if (res.data?.success) {
+        setNotifications(res.data.data || []);
+        setUnreadCount(res.data.unreadCount || 0);
+      }
+    } catch (err) {
+      console.warn('Failed to load notifications:', err?.message);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+    window.addEventListener('notificationchange', loadNotifications);
+    return () => window.removeEventListener('notificationchange', loadNotifications);
+  }, [loadNotifications]);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event('notificationchange'));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      window.dispatchEvent(new Event('notificationchange'));
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (!notif.isRead && notif.id) {
+      await handleMarkAsRead(notif.id);
+    }
+    if (notif.university?.name) {
+      navigate(`/universities?search=${encodeURIComponent(notif.university.name)}`);
+    } else if (notif.metadata?.actionUrl) {
+      navigate(notif.metadata.actionUrl);
+    } else {
+      navigate('/universities');
+    }
+  };
 
   useEffect(() => {
     const refresh = () => setBookmarks(getBookmarks());
@@ -252,37 +345,6 @@ const ProfilePage = () => {
         </div>
       </section>
 
-      {/* Current Priority */}
-      <section className="mb-24">
-        <div className="flex flex-col items-center rounded-xl border border-surface-variant/30 bg-surface-container-low p-12 text-center">
-          <span className="mb-6 inline-block rounded-full bg-accent/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent">
-            Current Priority
-          </span>
-          <h2 className="mb-4 font-['Plus_Jakarta_Sans'] text-[28px] font-semibold leading-snug text-deep-navy">
-            Drafting the Main Essay
-          </h2>
-          <p className="mb-10 max-w-lg text-base leading-relaxed text-on-surface-variant">
-            Your Stanford Early Action application is 78% complete. Finalizing
-            your personal statement is the most impactful step you can take
-            today.
-          </p>
-          <div className="flex w-full flex-col justify-center gap-4 sm:flex-row">
-            <button
-              type="button"
-              className="rounded-xl bg-accent px-10 py-4 text-sm font-bold text-white shadow-sm transition-all hover:shadow-lg hover:shadow-accent/20"
-            >
-              Resume Drafting
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-outline bg-white px-10 py-4 text-sm font-bold text-deep-navy transition-colors hover:bg-surface-container-low"
-            >
-              View Samples
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Two Column Grid */}
       <div className="mb-24 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         {/* Left: University Pipeline */}
@@ -363,90 +425,107 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Right: Recommended Actions */}
+        {/* Right: Notifications */}
         <div className="lg:col-span-5">
-          <h3 className="mb-8 font-['Plus_Jakarta_Sans'] text-[28px] font-semibold text-deep-navy">
-            Recommended Actions
-          </h3>
-
-          <div className="relative space-y-12 pl-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-outline-variant">
-            {/* Deadline */}
-            <div className="relative">
-              <div className="absolute -left-10 top-0 h-6 w-6 rounded-full border-4 border-white bg-error shadow-sm" />
-              <div>
-                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-error">
-                  Deadline • Oct 15
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="font-['Plus_Jakarta_Sans'] text-[28px] font-semibold text-deep-navy">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
+                <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-accent">
+                  {unreadCount} new
                 </span>
-                <h4 className="mb-2 text-base font-semibold text-deep-navy">
-                  Submit Stanford Application
-                </h4>
-                <p className="mb-4 text-sm text-on-surface-variant">
-                  The Early Action window closes in 12 days. Ensure all
-                  materials are reviewed.
-                </p>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm font-bold text-deep-navy transition hover:text-accent"
-                >
-                  Add to Calendar{' '}
-                  <span className="material-symbols-outlined text-sm">
-                    open_in_new
-                  </span>
-                </button>
-              </div>
+              )}
             </div>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllAsRead}
+                className="text-xs font-bold text-accent hover:underline"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
 
-            {/* Scholarship */}
-            <div className="relative">
-              <div className="absolute -left-10 top-0 h-6 w-6 rounded-full border-4 border-white bg-accent shadow-sm" />
-              <div>
-                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-accent">
-                  Opportunity • $10k Award
-                </span>
-                <h4 className="mb-2 text-base font-semibold text-deep-navy">
-                  STEM Excellence Grant
-                </h4>
-                <p className="mb-4 text-sm text-on-surface-variant">
-                  Matches your profile and Computer Science interest.
-                  Application takes ~15 mins.
-                </p>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm font-bold text-deep-navy transition hover:text-accent"
-                >
-                  Apply Now{' '}
-                  <span className="material-symbols-outlined text-sm">
-                    arrow_forward
-                  </span>
-                </button>
+          <div className="space-y-4">
+            {notifLoading && notifications.length === 0 ? (
+              <div className="rounded-xl border border-outline-variant/50 bg-white p-8 text-center text-xs text-on-surface-variant">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-outline-variant border-t-accent mb-2" />
+                <p>Loading notifications...</p>
               </div>
-            </div>
+            ) : notifications.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-outline-variant/50 bg-white p-8 text-center">
+                <span className="material-symbols-outlined mb-2 text-3xl text-on-surface-variant/40">
+                  notifications_off
+                </span>
+                <p className="text-sm font-semibold text-deep-navy">No notifications yet</p>
+                <p className="mt-1 text-xs text-on-surface-variant max-w-xs mx-auto">
+                  Follow universities to receive real-time admission updates, deadline reminders, and scholarship alerts.
+                </p>
+                <Link
+                  to="/universities"
+                  className="mt-4 inline-block rounded-lg bg-accent/10 px-4 py-2 text-xs font-bold text-accent hover:bg-accent/20 transition"
+                >
+                  Explore Universities
+                </Link>
+              </div>
+            ) : (
+              notifications.map((notif) => {
+                const meta = getNotifMeta(notif.type);
+                const isUnread = !notif.isRead;
+                const uniName = notif.university?.name || notif.metadata?.universityName;
+                const timeStr = formatNotifTime(notif.createdAt);
 
-            {/* Task */}
-            <div className="relative">
-              <div className="absolute -left-10 top-0 h-6 w-6 rounded-full border-4 border-white bg-deep-navy shadow-sm" />
-              <div>
-                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-deep-navy">
-                  Task • Missing Doc
-                </span>
-                <h4 className="mb-2 text-base font-semibold text-deep-navy">
-                  Request Recommendation Letter
-                </h4>
-                <p className="mb-4 text-sm text-on-surface-variant">
-                  You still need one more academic reference for your common
-                  app.
-                </p>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm font-bold text-deep-navy transition hover:text-accent"
-                >
-                  Email Counselor{' '}
-                  <span className="material-symbols-outlined text-sm">
-                    mail
-                  </span>
-                </button>
-              </div>
-            </div>
+                return (
+                  <div
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={`group relative flex items-start gap-4 rounded-xl border p-5 transition-all cursor-pointer ${
+                      isUnread
+                        ? 'border-accent/40 bg-accent/5 hover:bg-accent/10 shadow-xs'
+                        : 'border-outline-variant/50 bg-white hover:border-outline-variant hover:shadow-md'
+                    }`}
+                  >
+                    <div
+                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-xs ${meta.iconColor}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">{meta.icon}</span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        {uniName ? (
+                          <span className="text-xs font-bold uppercase tracking-wider text-accent truncate">
+                            {uniName}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant/70">
+                            {meta.label}
+                          </span>
+                        )}
+                        <span className="text-[11px] font-medium text-on-surface-variant/60 shrink-0">
+                          {timeStr}
+                        </span>
+                      </div>
+
+                      <h4 className={`mt-1 text-sm text-deep-navy ${isUnread ? 'font-bold' : 'font-semibold'}`}>
+                        {notif.title}
+                      </h4>
+
+                      <p className="mt-1 text-xs leading-relaxed text-on-surface-variant line-clamp-2">
+                        {notif.message}
+                      </p>
+                    </div>
+
+                    {isUnread && (
+                      <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
