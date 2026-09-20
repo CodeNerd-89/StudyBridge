@@ -87,6 +87,21 @@ export const register = async (payload = {}) => {
         cgpa: toNumberOrNull(cgpa),
         satScore: toNumberOrNull(satScore),
         ieltsScore: toNumberOrNull(ieltsScore),
+        greScore: toNumberOrNull(payload.greScore),
+        toeflScore: toNumberOrNull(payload.toeflScore),
+        duolingoScore: toNumberOrNull(payload.duolingoScore),
+        targetDegree: payload.targetDegree?.trim() || null,
+        targetIntake: payload.targetIntake?.trim() || null,
+        targetCountry: payload.targetCountry?.trim() || null,
+        fundingPreference: payload.fundingPreference?.trim() || null,
+        graduationYear: toNumberOrNull(payload.graduationYear),
+        researchInterests: payload.researchInterests?.trim() || null,
+        publicationsCount: toNumberOrNull(payload.publicationsCount),
+        workExperienceYears: toNumberOrNull(payload.workExperienceYears),
+        linkedinUrl: payload.linkedinUrl?.trim() || null,
+        githubUrl: payload.githubUrl?.trim() || null,
+        researchGateUrl: payload.researchGateUrl?.trim() || null,
+        statementOfPurpose: payload.statementOfPurpose?.trim() || null,
         preferredSubject: preferredSubject?.trim() || null,
         profileImage: profileImage?.trim() || null,
       },
@@ -223,30 +238,86 @@ export const completeProfile = async (userId, payload = {}) => {
     return { status: 401, body: { message: 'Unauthorized' } };
   }
 
-  const { name, country, cgpa, satScore, ieltsScore, preferredSubject } = payload;
-
-  if (!name || !name.trim() || !country || !country.trim()) {
-    return { status: 400, body: { message: 'Name and country are required.' } };
-  }
+  const {
+    name,
+    country,
+    phone,
+    institution,
+    subject,
+    preferredSubject,
+    targetDegree,
+    targetIntake,
+    targetCountry,
+    fundingPreference,
+    cgpa,
+    satScore,
+    ieltsScore,
+    greScore,
+    toeflScore,
+    duolingoScore,
+    graduationYear,
+    researchInterests,
+    publicationsCount,
+    workExperienceYears,
+    linkedinUrl,
+    githubUrl,
+    researchGateUrl,
+    statementOfPurpose,
+    profileImage,
+  } = payload;
 
   try {
+    const existing = await prisma.student.findUnique({ where: { id: userId } });
+    if (!existing) {
+      return { status: 404, body: { message: 'User not found.' } };
+    }
+
+    const resolvedName = name?.trim() || existing.name;
+    const resolvedCountry = country?.trim() || existing.country;
+
+    if (!resolvedName || !resolvedCountry) {
+      return { status: 400, body: { message: 'Name and country are required.' } };
+    }
+
+    const updateData = {
+      name: resolvedName,
+      country: resolvedCountry,
+    };
+
+    if (phone !== undefined) updateData.phone = phone?.trim() || null;
+    if (institution !== undefined) updateData.institution = institution?.trim() || null;
+    if (subject !== undefined) updateData.subject = subject?.trim() || null;
+    if (preferredSubject !== undefined) updateData.preferredSubject = preferredSubject?.trim() || null;
+    if (targetDegree !== undefined) updateData.targetDegree = targetDegree?.trim() || null;
+    if (targetIntake !== undefined) updateData.targetIntake = targetIntake?.trim() || null;
+    if (targetCountry !== undefined) updateData.targetCountry = targetCountry?.trim() || null;
+    if (fundingPreference !== undefined) updateData.fundingPreference = fundingPreference?.trim() || null;
+    if (cgpa !== undefined) updateData.cgpa = toNumberOrNull(cgpa);
+    if (satScore !== undefined) updateData.satScore = toNumberOrNull(satScore);
+    if (ieltsScore !== undefined) updateData.ieltsScore = toNumberOrNull(ieltsScore);
+    if (greScore !== undefined) updateData.greScore = toNumberOrNull(greScore);
+    if (toeflScore !== undefined) updateData.toeflScore = toNumberOrNull(toeflScore);
+    if (duolingoScore !== undefined) updateData.duolingoScore = toNumberOrNull(duolingoScore);
+    if (graduationYear !== undefined) updateData.graduationYear = toNumberOrNull(graduationYear);
+    if (researchInterests !== undefined) updateData.researchInterests = researchInterests?.trim() || null;
+    if (publicationsCount !== undefined) updateData.publicationsCount = toNumberOrNull(publicationsCount);
+    if (workExperienceYears !== undefined) updateData.workExperienceYears = toNumberOrNull(workExperienceYears);
+    if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl?.trim() || null;
+    if (githubUrl !== undefined) updateData.githubUrl = githubUrl?.trim() || null;
+    if (researchGateUrl !== undefined) updateData.researchGateUrl = researchGateUrl?.trim() || null;
+    if (statementOfPurpose !== undefined) updateData.statementOfPurpose = statementOfPurpose?.trim() || null;
+    if (profileImage !== undefined) updateData.profileImage = profileImage?.trim() || null;
+
     const student = await prisma.student.update({
       where: { id: userId },
-      data: {
-        name: name.trim(),
-        country: country.trim(),
-        cgpa: toNumberOrNull(cgpa),
-        satScore: toNumberOrNull(satScore),
-        ieltsScore: toNumberOrNull(ieltsScore),
-        preferredSubject: preferredSubject?.trim() || null,
-      },
+      data: updateData,
     });
 
     const token = signToken(student);
 
     return {
       status: 200,
-      body: { success: true, message: 'Profile completed.', token, user: publicUser(student) },
+      body: { success: true, message: 'Profile updated successfully.', token, user: publicUser(student) },
     };
   } catch (err) {
     console.error('Complete profile error:', err);

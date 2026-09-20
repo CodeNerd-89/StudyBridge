@@ -24,6 +24,20 @@ model Student {
   satScore            Int?
   ieltsScore          Float?
   greScore            Int?
+  toeflScore          Int?
+  duolingoScore       Int?
+  targetDegree        String?              @db.VarChar(100)
+  targetIntake        String?              @db.VarChar(50)
+  targetCountry       String?              @db.VarChar(150)
+  fundingPreference   String?              @db.VarChar(100)
+  graduationYear      Int?
+  researchInterests   String?              @db.VarChar(255)
+  publicationsCount   Int?                 @default(0)
+  workExperienceYears Float?
+  linkedinUrl         String?              @db.VarChar(255)
+  githubUrl           String?              @db.VarChar(255)
+  researchGateUrl     String?              @db.VarChar(255)
+  statementOfPurpose  String?              @db.Text
   profileImage        String?              @db.VarChar(255)
   role                String               @default("student") @db.VarChar(20)
   createdAt           DateTime             @default(now())
