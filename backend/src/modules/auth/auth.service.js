@@ -378,15 +378,16 @@ export const login = async (payload = {}) => {
  */
 export const ensureAdminUser = async () => {
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@studybridge.com').toLowerCase().trim();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'AdminPassword@123';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
   try {
     const existing = await prisma.student.findUnique({
       where: { email: adminEmail },
     });
 
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
     if (!existing) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       const created = await prisma.student.create({
         data: {
           name: 'StudyBridge Administrator',
@@ -400,12 +401,16 @@ export const ensureAdminUser = async () => {
       return created;
     }
 
-    if (existing.role !== 'admin') {
+    const matchesCurrent = await bcrypt.compare(adminPassword, existing.password);
+    if (!matchesCurrent || existing.role !== 'admin') {
       const updated = await prisma.student.update({
         where: { email: adminEmail },
-        data: { role: 'admin' },
+        data: {
+          role: 'admin',
+          password: hashedPassword,
+        },
       });
-      console.log(`[Admin] Promoted ${updated.email} to admin.`);
+      console.log(`[Admin] Synced admin account credentials and role for ${updated.email}`);
       return updated;
     }
 
